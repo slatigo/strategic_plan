@@ -1,0 +1,70 @@
+.container {
+ 
+  min-height: 100vh;
+  margin-top:100px;
+  
+}
+body {
+   background: #FA9300;  /* soft creamy golden */
+  color: #333;
+  font-family: Arial, sans-serif;
+}
+.bld{
+  font-weight: bold;
+}
+.hd{
+  display: none;
+}  
+.card {
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.platform-name {
+       
+  font-size: 2rem;
+  font-weight: 700;
+  background: #ffe082; /* Materialize yellow lighten-3 */
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: inline-block;
+
+      }
+      .platform-tagline {
+        text-align: center;
+        color: #e0e0e0;
+        margin-bottom: 50px;
+      }
+
+
+.nav-wrapper {
+  background: #D4A017;  /* rich golden brown */
+}
+
+.link{
+  cursor: pointer;
+  color:mediumslateblue /* Dodger Blue */
+}
+
+.modal.modal-large {
+  width: 90% !important;
+  max-height: 90% !important;
+}
+
+.modal.modal-large .modal-content {
+  padding-top: 60px; /* leave space for fixed close button */
+}
+
+.fixed-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2000;
+  padding: 10px;
+}
+
+.fixed-close i {
+  font-size: 40px;   /* LARGE close icon */
+  color: #333;
+  cursor: pointer;
+}

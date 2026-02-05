@@ -1,0 +1,134 @@
+extends layout
+block append head
+    script(type='text/javascript', src='/javascripts/auth.js')
+block content
+    form(class="form-horizontal" action="/" method="POST" id="poll-form")
+            input(type="hidden" value="polls" name="rq")
+            input(type="hidden" value="go-to-poll" name="crq")
+            input(type="hidden"  name="pollid" id="poll-id")
+    div(class="alert alert-danger err-msg hd" style="border-radius:0px;z-index:100000;position:fixed;top:60;width:100%")
+        
+        p(class="err-content")
+    div(class="alert alert-success  success-msg hd" style="z-index:1000;position:fixed;top:60;width:100%")
+        
+        p(class="success-content")
+    div(class="loading-div hd")
+        div(style="border-radius:50%;background:#fff;width:90px;height:90px;margin:0px auto;margin-top:90px;")
+            img(src="/images/load.gif" style="margin-top:15px")
+            h3(style="text-align:center;color:#fff" id="loading-text") Connecting
+    div(id="header")
+        nav(class="navbar navbar-default header" role="navigation")
+            div(class="navbar-header")
+                button(type="button" class="navbar-toggle" data-toggle="collapse" data-target="#menu" id="a-menu-items")
+                    span(class="icon-bar")
+                    span(class="icon-bar")
+                    span(class="icon-bar")
+                table
+                    tr
+                        td(style="padding-left:20px")
+                            a(href="/")
+                                img(src="/images/logo.png" class="logo-img" style="background:#fff;border-radius:50%")
+                        td
+                            a(class="navbar-brand" href="/" id="title") UIPE Polls
+            div(class="collapse navbar-collapse" id="menu")
+                ul(class="nav navbar-nav navbar-right")
+                    li(style="padding-top:10px;padding-right:10px")
+                        span(style='background:orange;color:#fff;border-radius:5px;padding:10px;cursor:pointer' class="req-password") Reset Password
+
+    div(id="container")
+        div(style="max-width:800px;margin:0px auto;padding:10px" id="login-div")
+            div(class="panel panel-primary")
+                div(class="panel-heading")
+                    h2(class="panel-title") Login
+                div(class="panel-body")
+                    form(class="form-horizontal")
+                        div(class="form-group")
+                            label(class="col-sm-3") Username
+                            div(class="col-sm-9")
+                                input(type="text" class="form-control" id="login-username")
+                        div(class="form-group")
+                            label(class="col-sm-3") Password
+                            div(class="col-sm-9")
+                                input(type="password" class="form-control" id="login-password")
+                        div(class="form-group")
+                            label(class="col-sm-3")
+                            div(class="col-sm-9")
+                                button(type="button" class="btn btn-primary form-control" id="login-btn") Login
+                    p(align='right' style="padding-top:20px") Lost your password?, <span style='background:orange;color:#fff;border-radius:5px;padding:10px;cursor:pointer' class="req-password"> Reset Now</span>
+                    div(class="modal fade" id="req-pw-div" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true")
+                        div(class="modal-dialog")
+                            div(class="modal-content")
+                                div(class="modal-header")
+                                    button(type="button" class="close" data-dismiss="modal" aria-hidden="true") &times;
+                                    h4(class="modal-title") Enter your Username
+                                div(class="modal-body")
+                                    table(style="width:100%" align="center")
+                                        tr
+                                            td
+                                                input(class="form-control" id="memid" placeholder="Username")
+                                            td(style="width:120px;padding-left:10px")
+                                                button(class="btn btn-primary" id="go-to-pass") Submit
+                                    
+
+            
+            
+        div(style="max-width:800px;margin:0px auto;padding:10px" id="show-numbers-div" class="hd")
+            div(id="reset-number-div" class="hd")
+                    div(class="panel panel-primary")
+                        div(class="panel-heading")
+                            h2(class="panel-title") Get Password Reset Code
+                        div(class="panel-body")
+                            div(id="numbers-table-div")
+                                h4 Select a phone number
+                                table(id="numbers-table" class="table")
+                            p(class="alert alert-danger hd" id="no-num-msg") No phone number associated with your username, contact support
+            div(id="reset-code-div" class="hd")
+                div(class="panel panel-primary")
+                    div(class="panel-heading")
+                        h2(class="panel-title") Enter Reset Code
+                    div(class="panel-body")
+                        div(id="numbers-table-div")
+                            table(style="width:100%" align="center")
+                                tr
+                                    td
+                                        input(class="form-control" id="rcode" placeholder="Reset Code")
+                                    td(style="width:120px;padding-left:10px")
+                                        button(class="btn btn-primary" id="check-reset-code") Submit
+                            br
+                            p(align="center") Didn't get the reset code, 
+                                button(class="btn btn-warning" id="resend-reset") Resend 
+            div(id="reset-pass-div" class="hd")
+                div(class="panel panel-primary")
+                    div(class="panel-heading")
+                        h2(class="panel-title") Reset your Password
+                    div(class="panel-body")
+                        form(class="form-horizontal" )
+                            div(class="form-group")
+                                label(class="col-sm-3") New Password
+                                div(class="col-sm-9")
+                                    input(type="password" class="form-control" id="new-pass" placeholder="New Password")
+                            div(class="form-group")
+                                label(class="col-sm-3")
+                                div(class="col-sm-9")
+                                    input(type="password" class="form-control" id="confirm-pass" placeholder="Confirm Password")
+                            div(class="form-group")
+                                label(class="col-sm-3")
+                                div(class="col-sm-9")
+                                    button(class="btn btn-primary form-control" id="reset-pass" type="button") Submit
+                            br
+                            
+            button(class="btn btn-primary" class="back-to-login") <i class="fa fa-arrow-circle-left"></i> Back to Login
+        div(class="modal fade" id="confirm-number-div" tabindex="-1" role="dialog" aria-hidden="true")
+            div(class="modal-dialog")
+                div(class="modal-content")
+                    div(class="modal-header")
+                        button(type="button" class="close" data-dismiss="modal" aria-hidden="true") &times;
+                        h4(class="modal-title") Confirm: <span id="num-masked-hdr"></span>
+                    div(class="modal-body")
+                        p(class='alert alert-danger hd' id="num-check-err")
+                        table(style="width:100%" align="center")
+                            tr
+                                td
+                                    input(class="form-control" id="cf-number" placeholder="Phone Number")
+                                td(style="width:120px;padding-left:10px")
+                                    button(class="btn btn-primary" id="confirm-number" onclick="check_num()") Submit

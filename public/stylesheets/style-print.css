@@ -1,0 +1,25 @@
+.table {
+  border-collapse: collapse;
+}
+
+.table, .table th, .table td {
+  border: 1px solid;
+  padding: 7px;
+}
+
+.no-border, .no-border th, .no-border td {
+  border: none;
+}
+.btn{
+	height: 40px;
+	
+}
+.bld{
+	font-weight: bolder;
+}
+@media print {
+
+	.np{
+		display: none;
+	}
+}

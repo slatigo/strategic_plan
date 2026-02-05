@@ -1,0 +1,64 @@
+extends layout
+block append head
+    script(type='text/javascript', src='/javascripts/supervisor.js')
+block content
+    div(id="header")
+        table(style="width:100%")
+            tr
+                td
+                    table
+                        tr
+                            td
+                                table
+                                    tr
+                                        td(class='logo-div' rowspan=2 style='vertical-align:top')
+                                            img(src="/images/logo.png" style="width:70px;")
+                                            
+                                        td
+                                            a(class="nav-link"  href="/supervisor?pg=staff") <i class="fa fa-address-card-o"></i> Staff List
+                                        td
+                                            a(class="nav-link" href="/supervisor?pg=tasks")
+                                                span(class="fa fa-calendar")
+                                                span 
+                                                span Tasks
+                                        
+                -if(user.roles.length>1)
+                -if(user.roles.length>1)
+                    td(align="right")
+                        button(class="btn btn-primary btn-sm" onclick="view_roles()") <i class="fa fa-users"></i> Roles
+                td(align='right' style='padding-right:10px;width:70px')
+                        div(class="dropdown desktop-mobi")
+                                button(class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle='dropdown' aria-expanded='false')
+                                    
+                                    i(class="fa fa-bars desktop-mobi")
+                                ul(class="dropdown-menu" id="dropdown-menu" role="menu")
+                                    
+                                    div(style="padding:20px;padding-bottom:0px;color:blue;text-align:center;cursor:pointer" onclick="refresh_user()")
+                                            span
+                                                span(class='fa fa-user') 
+                                                span=user.name
+                                            br
+                                            span(style="color:blue;font-size:10px")=user.email
+                                    hr
+                                    div(class="dropdown-content")
+                                        a(class="dropdown-item" href="#" onclick="view_profile()")
+                                            i(class="fa fa-user desktop-mobi")
+                                            span(class="pad")
+                                            span Profile
+                                        a(class="dropdown-item" href="#" onclick="reset_password_dl()")
+                                            i(class="fa fa-key desktop-mobi")
+                                            span(class="pad")
+                                            span Password
+                                        a(class="dropdown-item" href="/signout")
+                                            i(class="fa fa-sign-out desktop-mobi")
+                                            span(class="pad")
+                                            span Signout
+                                        a(class="dropdown-item" href="#" onclick="view_roles()")
+                                            i(class="fa fa-users desktop-mobi")
+                                            span(class="pad")
+                                            span Switch Role
+                                           
+
+    
+        p(align='right' colspan=3 style="padding-right:10px;margin-top:-15px")
+    

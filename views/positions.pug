@@ -1,0 +1,31 @@
+include org_admin
+script(type='text/javascript', src='/javascripts/positions.js')
+div(class="content")
+    div(class="card hd cd" id="psns-card")
+                div(class="card-header")
+                    span Designations
+                div(class="card-body")
+                    table
+                        tr
+                            td
+                                button(class='btn btn-primary' onclick="new_psn_dl()") <i class='fa fa-star'></i> New Designation
+                    br
+                    
+                    div(id="psns-div")
+div(class="modal " id="psn-modal" data-bs-backdrop="static" data-bs-keyboard="false"  tabindex="-1")
+        div(class="modal-dialog")
+            div(class="modal-content")
+                div(class="modal-header")
+                    p(class="modal-title") Designation
+                    button(type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close")
+                div(class="modal-body")
+                        div(id="dept-div-inner")
+                            
+                            div(class="row mb-3")
+                                label(class="col-sm-3") Designation
+                                div(class="col-sm-9")
+                                    input(type="text" class="form-control uppercase" id="psn" autocomplete="off")
+                           
+                                       
+                div(class="modal-footer")
+                    button(class='btn btn-primary' onclick="add_psn()") Submit

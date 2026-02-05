@@ -1,0 +1,1 @@
+var adata={url:"/supervisor"}

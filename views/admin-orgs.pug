@@ -1,0 +1,164 @@
+include admin
+script(type='text/javascript', src='/javascripts/admin-orgs.js')
+div(class="container")
+    div(class="card cd" id="orgs-card")
+            div(class="card-header")
+                 div(class="row")
+
+                        div(class="col-sm-6")
+                            button(class='btn btn-primary' onclick="org_dl()") New Organization
+                            table
+                                tr
+                                    
+                                    td
+                                        input(type="text" class="form-control" placeholder="Org Name" id="name")
+                                    td
+                                        button(class='btn btn-primary' onclick="get_lglogs_def('name')") Search
+                                    td
+                                        button(class='btn btn-primary' onclick="get_lglogs_def('all')") Reset
+                        div(class="col-sm-6")
+                
+                                table(align='right')
+                                    tr
+                                        td(class="hd" id="lglogs-prev" )
+                                            a(href="#" onclick="get_lglogs('previous')") &larr; Prev
+                                        
+                                        td(style="padding-left:5px;padding-right:5px" id="lglogs-os")
+                                    
+                                        td(class="hd"  id="lglogs-next")
+                                            a(href="#" onclick="get_lglogs('next')") &rarr; Next
+            div(class="card-body")
+                div(id="orgs-div")
+    div(class="card cd hd" id="view-card")
+            div(class="card-header")
+                table
+                    tr
+                        td
+                            button(class='btn btn-primary' onclick="view_orgs()") <i class='fa fa-arrow-left'></i> Back
+                        td
+                            p(id="org_name-hdr")
+               
+                    
+            div(class="card-body")
+                 div(class="row")
+                    div(class="col s12")
+                        ul(class="tabs")
+                      
+                            li(class='class="tab col s3"' )
+                                a(href="#" onclick="view_org()") Details
+                            li(class='class="tab col s3"')
+                                a(href="#"  onclick="get_org_admins()") Admins
+                    div(id="details-div" class='2cd hd')
+                        div(id="details-div-2")
+                    div(id="org_admins-div" class="2cd hd")
+                        button(class='btn btn-primary' onclick="org_admin_dl()") Add Admin
+                        br
+                        div(id="org_admins-div-2")
+
+
+
+    div(class="modal" id="org-modal")
+        
+            div(class="modal-content")
+              
+                    h5(class="modal-title") Organization
+                     a.modal-close.right(href="#!")
+                        i.material-icons close
+                    div(class="row mb-3")
+                        label(class="col-sm-4") Organization Name
+                        div(class="col-sm-8")
+                            input(type="text" class="form-control uppercase" id="org_name")
+                    div(class="row mb-3")
+                        label(class="col-sm-4") Vote Code
+                        div(class="col-sm-8")
+                            input(type="text" class="form-control" id="vote_code")
+                    div(class="row mb-3")
+                        label(class="col-sm-4") Address
+                        div(class="col-sm-8")
+                            input(type="text" class="form-control" id="address")
+                    div(class="row mb-3")
+                        label(class="col-sm-4") Email
+                        div(class="col-sm-8")
+                            input(type="text" class="form-control" id="email")
+
+                    div(class="row mb-3")
+                        label(class="col-sm-4") Phone Contact
+                        div(class="col-sm-8")
+                            input(type="text" class="form-control" id="phone")
+                        
+            div(class="modal-footer")
+                       
+                        button(class="btn btn-primary" onclick="add_org()") Submit
+    div(class="modal" id="subscription-modal" data-bs-backdrop="static" data-bs-keyboard="false"  tabindex="-1" )
+        div(class="modal-dialog")
+            div(class="modal-content")
+                div(class="modal-header")
+                    h5(class="modal-title") Subscription
+                    a.modal-close.right(href="#!")
+                        i.material-icons close
+                div(class="modal-body")
+                    
+                        div(class="row mb-3")
+                            label(class="col-sm-4") Subscription Type
+                            div(class="col-sm-8")
+                                select(class="form-select" id="subscription_type")
+                                    option
+                                    option Premium
+                                    option Trial
+                        div(class="row mb-3")
+                            label(class="col-sm-4") Subscription Start
+                            div(class="col-sm-8")
+                                table(style="width:100%")
+                                        tr
+                                            td
+                                                select(class="day form-select" id="start_day")
+                                            
+                                            td
+                                                select(class="month form-select" id="start_month")
+                                            td(style="width:92px")
+                                                input(type="number" min=1 class="form-control" id="start_year")
+                        div(class="row mb-3")
+                            label(class="col-sm-4") Subscription Ends
+                            div(class="col-sm-8")
+                                table(style="width:100%")
+                                        tr
+                                            td
+                                                select(class="day form-select" id="end_day")
+                                            
+                                            td
+                                                select(class="month form-select" id="end_month")
+                                            td(style="width:92px")
+                                                input(type="number" min=1 class="form-control" id="end_year")
+                                
+                        
+                        
+                      
+                        
+                        
+                div(class="modal-footer")
+                       
+                        button(class="btn btn-primary" onclick="add_org()") Submit
+    div(class="modal" id="org_admin-modal" )
+       
+            div(class="modal-content")
+                    a.modal-close.right(href="#!")
+                        i.material-icons close
+                    h5(class="modal-title") Org. Admin
+                    
+                    div(class="modal-body")
+                        
+                           
+                            div(class="row mb-3")
+                                label(class="col-sm-4") Name
+                                div(class="col-sm-8")
+                                    
+                                    input(type="text" class="form-control" id="admin_name")
+                            div(class="row mb-3")
+                                label(class="col-sm-4") Email
+                                div(class="col-sm-8")
+                                   
+                                    input(type="text" class="form-control" id="admin_email")
+                                
+                    div(class="modal-footer")
+                           
+                            button(class="btn btn-primary" onclick="add_admin()") Submit

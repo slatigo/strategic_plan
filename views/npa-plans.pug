@@ -1,0 +1,211 @@
+include npa
+script(type='text/javascript', src='/javascripts/npa-plans.js')
+div(class="content")
+    div(class="container")
+        
+        div(class="card" id="plans-card")
+
+            span Strategic Plans 
+           
+            hr
+            div(class="card-body")
+                p
+                div(id="plans-div")
+        div(class="card hd" id="sp_objectives-card")
+            div(class="card-title" )
+                button(class='btn btn-primary' onclick="preview_plan()") Preview Plan
+                p(id="sp_objectives-hdr")
+                button(class='btn btn-primary' onclick="back()") <i class='fa fa-arrow-left'></i> Back
+
+                table
+                    tr
+                        
+                           
+                        td
+                            span Programme Objective
+                            select(id="objective_id")
+                    tr
+                        td
+                            span Institution Objective
+                            input(type='text' id='org_objective')
+                    
+                        td
+                            button(class="btn" onclick="add_objective()") Add Objective
+            div(class="card-content")
+                div(id="sp_objectives-div")
+        div(class="card hd" id="sp_outcome-card")
+            div(class="card-title" )
+                p(id="sp_outcomes-hdr")
+                table
+                    tr
+                        td
+                            button(class='btn btn-primary' onclick="get_sp_objectives('back')") <i class='fa fa-arrow-left'></i> Back
+                
+                        td
+                            select(id="outcome_id")
+                        td
+                            button(class="btn" onclick="add_outcome()") Add Outcome
+            div(class="card-content")
+                div(id="sp_outcome-div")
+        div(class="card hd" id="sp_interventions-card")
+            div(class="card-title" )
+                p(id="sp_interventions-hdr")
+                table
+                    tr
+                        td
+                            button(class='btn btn-primary' onclick="get_sp_outcomes('back')") <i class='fa fa-arrow-left'></i> Back
+                        td
+                            select(id="intervention_id")
+                        td
+                            button(class="btn" onclick="add_intervention()") Add Intervention
+            div(class="card-content")
+                div(id="sp_interventions-div")
+
+
+        div(class="card hd" id="sp_outputs-card")
+            div(class="card-title" )
+                p(id="sp_outputs-hdr")
+                table
+                    tr
+                        td
+                            button(class='btn btn-primary' onclick="get_sp_interventions('back')") <i class='fa fa-arrow-left'></i> Back
+                        td
+                            select(id="output_id")
+                        td
+                            button(class="btn" onclick="add_output()") Add Output
+            div(class="card-content")
+                div(id="sp_outputs-div")       
+div(class="modal" id="plan-modal")
+    div(class="modal-content")
+        div(class="modal-header")
+           
+            a.modal-close.right(href="#!")
+                        i.material-icons close
+            h5(class="modal-title") Strategic Plan
+        div(class="modal-body")
+
+            table
+                tr
+
+                   
+                    td Base Year
+                    td Programme
+
+                    
+                tr
+                    td(style='width:100px')
+                        select(id="fy" class='form-select')
+                            option 2024/25
+                            option 2025/26
+                            option 2026/27
+                            option 2027/28
+                            option 2028/29
+                            option 2029/30
+                    td
+                        select(class='form-select' id='prog_id')
+                
+                tr
+                    td(colspan=2)
+                        span Plan Description
+                        input(class="form-control" id="plan")
+
+                  
+
+        div(class="modal-footer")
+               
+                button(class="btn btn-primary" onclick="add_plan()") Submit
+div.modal.modal-large#outcome-indicator-modal
+  div.modal-content
+    a.modal-close.fixed-close
+      i.material-icons close
+
+    h5.modal-title Outcome Indicators
+
+    div.modal-body
+      
+
+
+            table
+                tr
+                    td
+                      select.form-select.w-auto#outcome_indicator_id
+
+                    td(style='width:100px')
+                        select(id="oci_axn" onchange="adopt_adapt_changed(this.value,'adapted_indicator_td')")
+                            option Adopt
+                            option Adapt
+                
+                        td(id="adapted_indicator_td" class='hd' colspan=2)
+                            input(id="adapted_outcome_indicator")
+               
+                
+                        td(align='right')
+                            button(class='btn' onclick="add_sp_outcome_indicator()") Add Indicator
+
+                 
+            div(id="sp-outcome-indicators-div")
+div(class="modal modal-large" id="output-indicator-modal")
+    div(class="modal-content")
+        div(class="modal-header")
+           
+            a.modal-close.right(href="#!")
+                i.material-icons close
+            h5(class="modal-title") Output Indicator
+        div(class="modal-body")
+            table
+                tr
+                    td
+                      select.form-select.w-auto#output_indicator_id
+
+                    td(style='width:100px')
+                        select(id="opi_axn" onchange="adopt_adapt_changed(this.value,'adapted_output_indicator_td')")
+                            option Adopt
+                            option Adapt
+                tr
+                        td(id="adapted_output_indicator_td" class='hd')
+                            input(id="adapted_output_indicator")
+                        td
+                            button(class='btn' onclick="add_sp_output_indicator()") Submit
+
+                 
+            div(id="sp-output-indicators-div")
+div(class="modal modal-large" id="output-actions-modal")
+    div(class="modal-content")
+        div(class="modal-header")
+            a.modal-close.right(href="#!")
+                i.material-icons close
+            h5(class="modal-title") PIAP Actions
+        div(class="modal-body")
+            table
+                tr
+                    td
+                      select.form-select.w-auto#output_action_id
+
+                    td(style='width:100px')
+                        select(id="output_action" onchange="adopt_adapt_changed(this.value,'adapted_output_action_td')")
+                            option Adopt
+                            option Adapt
+                tr
+                        td(id="adapted_output_action_td" class='hd')
+                            input(id="adapted_output_action")
+                        td
+                            button(class='btn' onclick="add_sp_output_action()") Submit
+
+                 
+            div(id="sp-output-actions-div")
+
+        
+div(class="modal modal-large" id="preview-modal")
+    div(class="modal-content")
+        
+            
+        div(class="modal-body")
+            h5(class="modal-title") Preview
+            div(id="preview-div")
+        div(class="modal-footer")
+            div(id='approval-div')
+                select(class='form-select' id="action")
+                    option(value='Approved') Approve
+                    option(value='Declined') Decline
+                textarea(id="remarks")
+                button(class='btn' onclick="submit_plan()") Confirm and Submit
