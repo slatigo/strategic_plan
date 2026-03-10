@@ -1,1 +1,0 @@
-var adata={url:"/npa"}

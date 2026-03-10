@@ -1,0 +1,58 @@
+extends ./layout
+
+block npa_content
+  .d-flex.justify-content-between.align-items-center.mb-4
+    div
+      h2.fw-bold Managed MDAs
+      p.text-muted.small View and update government entity details.
+    button.btn.btn-primary.px-4.shadow-sm(onclick="openCreateModal()")
+      i.fas.fa-plus.me-2
+      | Add New MDA
+
+  .card.border-0.shadow-sm
+      .card-body.p-0
+        .table-responsive
+          table.table.table-hover.align-middle.mb-0
+            thead.table-light
+              tr
+                th.px-4 Code
+                th Full Name
+                th Category
+                th.text-center Admins
+                th.text-end.px-4 Actions
+            tbody
+              if mdas && mdas.length > 0
+                each mda in mdas
+                  tr
+                    td.px-4: span.badge.bg-primary-subtle.text-primary.border.border-primary-subtle= mda.code
+                    td
+                      //- Make the name clickable to go directly to its admin management
+                      a.fw-bold.text-decoration-none.text-dark(href=`/npa/mda/${mda.id}/admins`)
+                        = mda.name
+                        i.fas.fa-external-link-alt.ms-2.small.text-muted
+                    td
+                      - const color = mda.type === 'Ministry' ? 'bg-info' : mda.type === 'Department' ? 'bg-secondary' : 'bg-success'
+                      span.badge(class=color)= mda.type
+                    
+                    //- Optional: Show how many admins are currently in this MDA
+                    td.text-center
+                      span.badge.rounded-pill.bg-light.text-dark.border= (mda.admins ? mda.admins.length : 0)
+
+                    td.text-end.px-4
+                      //- Action: Manage Admins (The new key button)
+                      a.btn.btn-outline-primary.btn-sm.me-2(href=`/npa/mda/${mda.id}/admins` title="Manage Admins")
+                        i.fas.fa-users-gear.me-1
+                        | Admins
+                      
+                      //- Standard Edit/Delete
+                      button.btn.btn-light.btn-sm.me-1(onclick=`prepareEdit('${mda.id}', '${mda.name}', '${mda.code}', '${mda.type}')` title="Edit MDA Settings")
+                        i.fas.fa-edit
+                      button.btn.btn-light.btn-sm.text-danger(onclick=`confirmDelete('${mda.id}')` title="Delete MDA")
+                        i.fas.fa-trash-can
+              else
+                tr
+                  td.text-center.py-5.text-muted(colspan="5") No MDAs currently registered.
+
+  include ./partials/mda-modal.pug
+
+  script(src="/js/npa/mda-management.js")

@@ -1,0 +1,132 @@
+extends ./layout
+
+block npa_content
+  //- Header Section
+  .d-flex.justify-content-between.align-items-center.mb-4
+    div
+      h2.fw-bold System Administrators
+      p.text-muted.small Manage high-level platform access and administrative roles.
+    button.btn.btn-primary.px-4.shadow-sm(onclick="openAdminModal()")
+      i.fas.fa-user-plus.me-2
+      | Invite Admin
+
+  //- Admins Table
+  .card.border-0.shadow-sm
+    .card-body.p-0
+      .table-responsive
+        table.table.table-hover.align-middle.mb-0
+          thead.table-light
+            tr
+              th.px-4 Name
+              th Email
+              th Role
+              th Status
+              th.text-end.px-4 Actions
+          tbody
+              tbody
+                if admins && admins.length > 0
+                  each admin in admins
+                    //- Apply a 'table-light' or custom class if the admin is inactive
+                    tr(class=!admin.active ? 'bg-light text-muted' : '')
+                      td.px-4
+                        .d-flex.align-items-center
+                          //- Avatar turns grey if inactive
+                          .avatar.sm.rounded-circle.me-2.d-flex.align-items-center.justify-content-center(
+                            class=admin.active ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'
+                            style="width: 32px; height: 32px; font-size: 12px;"
+                          )
+                            = admin.name.charAt(0).toUpperCase()
+                          
+                          span(class=admin.active ? 'fw-medium' : 'text-decoration-line-through')= admin.name
+                      
+                      td= admin.email
+                      
+                      td
+                        if admin.active
+                          span.badge.rounded-pill.bg-success-subtle.text-success.border.border-success-subtle
+                            i.fas.fa-check-circle.me-1
+                            | Active
+                        else
+                          span.badge.rounded-pill.bg-danger-subtle.text-danger.border.border-danger-subtle
+                            i.fas.fa-times-circle.me-1
+                            | Inactive
+                      
+                      td.text-end.px-4
+                        //- Edit Button
+                        button.btn.btn-light.btn-sm.me-2(
+                          onclick=`prepareAdminEdit('${admin.id}', '${admin.name}', '${admin.email}', ${admin.active})`
+                          title="Edit Admin"
+                        )
+                          i.fas.fa-user-edit
+                        
+                        //- Delete Button
+                        button.btn.btn-light.btn-sm.text-danger(
+                          onclick=`confirmAdminDelete('${admin.id}')`
+                          title="Remove Admin"
+                        )
+                          i.fas.fa-trash-can
+                else
+                  tr
+                    td.text-center.py-5(colspan="4")
+                      p.text-muted No administrators found.
+
+  //- Invite/Edit Modal
+  #adminModal.modal.fade(tabindex="-1" aria-hidden="true")
+    .modal-dialog.modal-dialog-centered
+      .modal-content.border-0.shadow
+        .modal-header.bg-light
+          h5#adminModalLabel.modal-title Invite System Admin
+          button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+        
+        .modal-body.p-4
+          form#adminForm
+            input#adminId(type="hidden")
+            
+            .mb-3
+              label.form-label.fw-semibold Full Name
+              input.form-control(name="name" required placeholder="John Doe")
+            
+            .mb-3
+              label.form-label.fw-semibold Email Address
+              input.form-control(name="email" type="email" required placeholder="admin@npa.gov")
+            
+            //- NEW: Status Toggle (Hidden by default, shown via JS during Edit)
+            #statusField.mb-4(style="display: none;")
+              label.form-label.fw-semibold.d-block Account Access
+              .form-check.form-switch
+                input#adminStatus.form-check-input(type="checkbox" name="active" checked)
+                label.form-check-label(for="adminStatus") Grant System Access
+              .form-text.small Uncheck to temporarily disable this administrator's login.
+
+            //- Password Field (Shown by default, hidden via JS during Edit)
+            #passwordField.mb-0
+              label.form-label.fw-semibold Temporary Password
+              input.form-control(name="password" type="password" placeholder="Min. 8 characters")
+              .form-text.small Required for new invitations.
+
+        .modal-footer.bg-light.border-0
+          button.btn.btn-link.text-muted.text-decoration-none(type="button" data-bs-dismiss="modal") Cancel
+          button#saveAdminBtn.btn.btn-primary.px-4(onclick="saveAdmin()") Save Administrator
+
+block append scripts
+  script(src="/js/npa/admin-management.js")
+  script.
+    function togglePasswordVisibility() {
+      const pwd = document.querySelector('input[name="password"]');
+      const icon = event.currentTarget.querySelector('i');
+      if (pwd.type === 'password') {
+        pwd.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        pwd.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+  style.
+    .avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        flex-shrink: 0;
+    }

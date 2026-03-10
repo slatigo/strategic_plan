@@ -1,0 +1,68 @@
+extends ./layout
+
+block npa_content
+  .mb-4
+    nav(aria-label="breadcrumb")
+      ol.breadcrumb
+        li.breadcrumb-item: a(href="/npa/mda") MDAs
+        li.breadcrumb-item.active= mda.shortName || mda.name
+    
+    .d-flex.justify-content-between.align-items-center
+      div
+        h2.fw-bold= mda.name
+        p.text-muted Manage users specifically for this agency.
+      
+      //- Pass the MDA ID to the JS function
+      button.btn.btn-primary(onclick=`openMdaAdminModal(${mda.id})`)
+        i.fas.fa-user-plus.me-2
+        | Add MDA Admin
+
+  if admins && admins.length > 0
+      //- 1. SHOW THE TABLE ONLY IF DATA EXISTS
+      .card.border-0.shadow-sm
+        .card-body.p-0
+          .table-responsive
+            table.table.table-hover.align-middle.mb-0
+              thead.table-light
+                tr
+                  th.px-4 Name
+                  th Email
+                  th Status
+                  th.text-end.px-4 Actions
+              tbody
+                each admin in admins
+                  tr
+                    td.px-4.fw-medium= admin.name
+                    td= admin.email
+                    td
+                      span.badge.rounded-pill(class=admin.active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger')
+                        = admin.active ? 'Active' : 'Inactive'
+                    td.text-end.px-4
+                      button.btn.btn-sm.btn-light(onclick=`prepareEdit('${admin.id}', '${admin.name}', '${admin.email}', ${admin.active})`)
+                        i.fas.fa-edit
+                      button.btn.btn-sm.btn-light.text-danger(onclick=`confirmDelete('${admin.id}')` title="Delete")
+                        i.fas.fa-trash-can
+  else
+      //- 2. SHOW A CLEAN "EMPTY STATE" CARD IF NO DATA
+      .card.border-0.shadow-sm.text-center.py-5
+        .card-body.py-5
+          .mb-4
+            //- Using a stacked icon for a more modern look
+            span.fa-stack.fa-3x.text-light
+              i.fas.fa-circle.fa-stack-2x
+              i.fas.fa-user-plus.fa-stack-1x.fa-inverse.text-secondary
+          
+          h3.fw-bold.text-dark No Administrators Yet
+          p.text-muted.mx-auto(style="max-width: 400px;")
+            | This MDA currently has no assigned administrators. Invite a user to grant them access to manage this agency's data.
+          
+          button.btn.btn-primary.px-4.py-2.mt-3(onclick="openMdaAdminModal()")
+            i.fas.fa-plus.me-2
+            | Invite First Administrator
+    
+  include ./partials/mda-admin-modal.pug
+
+block scripts
+
+    script(src="/js/npa/mda-admin-management.js")
+    

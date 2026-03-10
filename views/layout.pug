@@ -1,26 +1,39 @@
 doctype html
 html(lang="en")
-  block head
-    meta(meta charset="utf-8")
-    meta(name="viewport" content="width=device-width, initial-scale=1")
-    script(src="/javascripts/jquery.js")
-    script(src="/libs/tinymce/tinymce.min.js" referrerpolicy="origin")
-    link(href="/libs/materialize/icon.css", rel="stylesheet")
-    // Materialize CSS
-    link(href="/libs/materialize/materialize.min.css", rel="stylesheet")
-    link( type="image/x-icon" rel="shortcut icon" href="/images/logo.png")
-    link(rel='stylesheet', href='/stylesheets/style.css')
-    link(rel='stylesheet', href='/stylesheets/headings.css')
-    link(rel='stylesheet', href='/stylesheets/font-awesome.min.css')
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title NPA Planning System
     
-    script(src="/libs/materialize/materialize.min.js")
-    script(src="/javascripts/gen.js")
-    script(src="/javascripts/gen_table.js")
+    //- Tailwind CSS for styling
+    script(src="https://cdn.tailwindcss.com")
     
+    //- Global Utilities (The API helper we discussed)
+    script(src="/js/utils.js")
     
-    
+    //- Allows individual pages to inject specific CSS or Meta tags
+    block head
 
-    title=title
-    
-  body
-        block content
+  body.bg-gray-50.text-gray-900.font-sans.leading-normal.tracking-normal
+    //- Main Navigation Bar
+    nav.bg-blue-900.text-white.shadow-md.mb-8
+      .container.mx-auto.px-6.py-3.flex.justify-between.items-center
+        div
+          a.text-xl.font-bold.tracking-wider(href="/") NPA PORTAL
+        
+        .flex.items-center.space-x-4
+          //- This area can be dynamically updated via JS to show user info
+          span#nav-user-name.text-sm.font-light
+          button(class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded transition duration-200" onclick="API.logout()") | Logout
+
+    //- Main Content Wrapper
+    main.container.mx-auto.px-6.pb-12
+      block content
+
+    //- Footer
+    footer.bg-white.border-t.mt-auto.py-6
+      .container.mx-auto.px-6.text-center.text-gray-500.text-sm
+        p &copy; 2026 National Planning Authority (NPA). All rights reserved.
+
+    //- Allows individual pages to inject their specific JS files
+    block scripts

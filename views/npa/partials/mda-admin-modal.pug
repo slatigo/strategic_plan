@@ -1,0 +1,40 @@
+#mdaAdminModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-dialog-centered
+    .modal-content.border-0.shadow-lg
+      .modal-header.bg-light.py-3
+        h5#mdaAdminModalLabel.modal-title.fw-bold
+          i.fas.fa-user-shield.me-2.text-primary
+          | Add MDA Administrator
+        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      
+      .modal-body.p-4
+        form#mdaAdminForm
+          //- HIDDEN FIELDS: Critical for linking the user correctly
+          input#adminId(type="hidden" name="id")
+          input#mdaId(type="hidden" name="mdaId" value=mda.id)
+          input(type="hidden" name="role" value="mda_admin")
+
+          .mb-3
+            label.form-label.small.text-uppercase.fw-bold.text-muted Full Name
+            input.form-control(name="name" type="text" required placeholder="e.g. Lamin Sanneh")
+          
+          .mb-3
+            label.form-label.small.text-uppercase.fw-bold.text-muted Email Address
+            input.form-control(name="email" type="email" required placeholder="l.sanneh@agency.gov.gm")
+
+          #statusField.mb-3(style="display: none;")
+            label.form-label.small.text-uppercase.fw-bold.text-muted Account Status
+            .form-check.form-switch
+              input#adminStatus.form-check-input(type="checkbox" name="active" checked)
+              label.form-check-label(for="adminStatus") Active / Access Granted
+
+          #passwordField.mb-0
+            label.form-label.small.text-uppercase.fw-bold.text-muted Temporary Password
+            input.form-control(name="password" type="password" placeholder="Min. 8 characters")
+            .form-text.small User must change this on first login.
+
+      .modal-footer.bg-light.border-0
+        button.btn.btn-link.text-muted.text-decoration-none(type="button" data-bs-dismiss="modal") Cancel
+        button#saveMdaAdminBtn.btn.btn-primary.px-4(onclick="saveMdaAdmin()") 
+          i.fas.fa-save.me-2
+          | Save Admin

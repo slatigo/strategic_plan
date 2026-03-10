@@ -1,0 +1,108 @@
+extends ./layout
+
+block mda_content
+  .row.mb-4
+    .col-md-8
+      h2.fw-bold Welcome, #{user.name}
+      p.text-muted MDA: #{user.mdaName || 'Institution Planner'}
+    .col-md-4.text-md-end
+      span.badge.bg-primary.p-2 Financial Year: 2026/2027
+
+  //- 1. SECTION: Action Required (Declined Plans)
+  - const needsAttention = myPlans.filter(p => p.status === 'Pending Correction')
+  if needsAttention.length > 0
+    .alert.alert-warning.border-0.shadow-sm.mb-4
+      h5.fw-bold 
+        i.fas.fa-exclamation-triangle.me-2
+        | Action Required
+      p The following plans require corrections based on NPA feedback.
+      each plan in needsAttention
+        .d-flex.justify-content-between.align-items-center.bg-white.p-3.rounded.border-start.border-warning.border-4.mb-2
+          div
+            strong FY #{plan.Call.fy}
+            br
+            small.text-muted Latest Feedback: #{plan.Reviews[0] ? plan.Reviews[0].comment : 'No comment provided'}
+          a.btn.btn-sm.btn-warning(href=`/mda/plans/${plan.id}/edit`) 
+            i.fas.fa-edit.me-1
+            | Fix Now
+
+  //- 2. SECTION: Open Calls (Invitations to Plan)
+  if openCalls.length > 0
+    h4.fw-bold.mb-3 Open Planning Windows
+    .row.mb-4
+      each call in openCalls
+        .col-md-6
+          .card.border-primary.shadow-sm
+            .card-body
+              .d-flex.justify-content-between
+                h5.card-title.fw-bold FY #{call.fy}
+                span.badge.bg-success Open
+              p.card-text.text-muted= call.description
+              .d-flex.justify-content-between.align-items-center
+                span.text-danger.small 
+                  i.fas.fa-clock.me-1
+                  | Deadline: #{call.deadline}
+                button.btn.btn-primary.btn-sm(onclick=`openStartPlanModal(${call.id}, '${call.fy}')`)
+                  | Start Submission
+
+  //- 3. SECTION: My Submissions Table
+  h4.fw-bold.mb-3 My Planning History
+  .card.border-0.shadow-sm
+    .card-body.p-0
+      if myPlans.length > 0
+        .table-responsive
+          table.table.table-hover.align-middle.mb-0
+            thead.table-light
+              tr
+                th.px-4 Fiscal Year
+                th Date Created
+                th Status
+                th.text-end.px-4 Actions
+            tbody
+              each plan in myPlans
+                tr
+                  td.px-4
+                    .fw-bold= plan.Call.fy
+                      if plan.Programme
+                        small.text-muted= plan.Programme.programme_name
+                  td= new Date(plan.recorded).toLocaleDateString()
+                  td
+                    case plan.status
+                      when 'Draft'
+                        span.badge.bg-secondary Draft
+                      when 'Submitted'
+                        span.badge.bg-info Submitted
+                      when 'Approved'
+                        span.badge.bg-success Approved
+                      when 'Pending Correction'
+                        span.badge.bg-warning Pending Correction
+                  td.text-end.px-4
+                    a.btn.btn-sm.btn-outline-primary(href=`/mda/plans/${plan.id}`) 
+                      i.fas.fa-eye
+      else
+        .p-5.text-center
+          p.text-muted No plans created yet. Use an open call above to start.
+  //- The Modal for selecting a Programme
+  .modal.fade#startPlanModal(tabindex="-1" aria-hidden="true")
+    .modal-dialog
+      .modal-content
+        .modal-header.bg-primary.text-white
+          h5.modal-title Start Submission for FY 
+            span#display_fy
+          button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
+        .modal-body
+          input(type="hidden" id="modal_call_id")
+          .mb-3
+            label.form-label.fw-bold Select Government Programme
+            select.form-select#programme_id(required, name="programme_id")
+              option(value="" selected disabled) -- Choose a Programme --
+              each prog in availableProgrammes
+                //- Use camelCase names: programmeCode and programmeName
+                option(value=prog.id) #{prog.programmeCode} - #{prog.programmeName}
+            p.small.text-muted Selecting a programme links your strategic objectives to the specific National Development Plan (NDP) pillar.
+
+        .modal-footer
+          button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+          button.btn.btn-primary#btnSubmitPlan(onclick="submitNewPlan()") Start Submission
+block scripts
+    script(src="/js/mda/dashboard.js")

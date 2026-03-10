@@ -1,0 +1,43 @@
+//- MDA Create/Edit Modal
+.modal.fade#mdaModal(tabindex="-1" aria-labelledby="mdaModalLabel" aria-hidden="true")
+  .modal-dialog.modal-dialog-centered
+    .modal-content.border-0.shadow
+      .modal-header.bg-light.border-bottom-0.py-3
+        h5#mdaModalLabel.modal-title.fw-bold.text-dark Register New MDA
+        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      
+      .modal-body.px-4.py-3
+        form#addMdaForm
+          //- Hidden field to store ID during updates
+          input#mdaId(type="hidden" name="id")
+          
+          .mb-3
+            label.form-label.fw-semibold.small.text-uppercase.text-muted Full Name
+            input.form-control.form-control-lg(
+              name="name" 
+              type="text" 
+              placeholder="e.g. Ministry of Finance" 
+              required
+            )
+            .form-text Please enter the official legal name of the entity.
+
+          .mb-3
+            label.form-label.fw-semibold.small.text-uppercase.text-muted Short Code
+            input.form-control.form-control-lg(
+              name="code" 
+              type="text" 
+              placeholder="e.g. MOFPED" 
+              required
+            )
+          
+          .mb-3
+            label.form-label.fw-semibold.small.text-uppercase.text-muted Organization Category
+            select.form-select.form-select-lg(name="type" required)
+              option(value="" disabled selected) Choose category...
+              option(value="Ministry") Ministry
+              option(value="Department") Department
+              option(value="Agency") Agency
+
+      .modal-footer.bg-light.border-top-0.py-3
+        button.btn.btn-link.text-secondary.text-decoration-none(type="button" data-bs-dismiss="modal") Cancel
+        button#saveBtn.btn.btn-primary.px-4.fw-bold(type="button" onclick="saveMda()") Save MDA

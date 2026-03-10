@@ -1,0 +1,75 @@
+extends ./layout
+
+block npa_content
+  //- Stats Row
+  //- Stats Row
+  .row.g-4.mb-4
+  
+      .col-12.col-md-4
+        .card.border-0.shadow-sm.rounded-4
+          .card-body.p-4
+            .d-flex.align-items-center.justify-content-between
+              div
+                p.text-muted.small.fw-bold.text-uppercase.mb-1 Registered MDAs
+                h2.fw-bold.mb-0= stats ? stats.mdas : '0'
+              .p-3.bg-primary.bg-opacity-10.text-primary.rounded-3
+                i.fas.fa-building.fa-lg
+
+      //- Pending Submissions
+      .col-12.col-md-4
+        .card.border-0.shadow-sm.rounded-4
+          .card-body.p-4
+            .d-flex.align-items-center.justify-content-between
+              div
+                p.text-muted.small.fw-bold.text-uppercase.mb-1 Pending Submissions
+                h2.fw-bold.mb-0= stats ? stats.pending : '0'
+              .p-3.bg-warning.bg-opacity-10.text-warning.rounded-3
+                i.fas.fa-clock.fa-lg
+
+      //- System Administrators
+      .col-12.col-md-4
+        .card.border-0.shadow-sm.rounded-4
+          .card-body.p-4
+            .d-flex.align-items-center.justify-content-between
+              div
+                p.text-muted.small.fw-bold.text-uppercase.mb-1 System Admins
+                h2.fw-bold.mb-0= stats ? stats.admins : '1'
+              .p-3.bg-success.bg-opacity-10.text-success.rounded-3
+                i.fas.fa-user-shield.fa-lg
+    
+
+  //- Content Row
+  .row.g-4
+    // Recent Submissions Card
+    .col-12.col-lg-8
+      .card.border-0.shadow-sm.rounded-4
+        .card-header.bg-white.py-3.px-4.border-bottom-0.d-flex.justify-content-between.align-items-center
+          h5.fw-bold.text-dark.mb-0 Recent Submissions
+          a.btn.btn-sm.btn-link.text-decoration-none.fw-bold(href="/npa/submissions") View All
+        
+        .card-body.p-0
+          .table-responsive
+            table.table.table-hover.align-middle.mb-0
+              thead.table-light
+                tr
+                  th.ps-4.small.text-uppercase.text-muted MDA
+                  th.small.text-uppercase.text-muted Title
+                  th.small.text-uppercase.text-muted Date
+                  th.text-end.pe-4.small.text-uppercase.text-muted Status
+              tbody
+                //- Logic to loop through recent submissions would go here
+                tr
+                  td.ps-4.fw-medium Ministry of Health
+                  td Q3 Planning Report
+                  td.text-muted 12 Oct 2026
+                  td.text-end.pe-4
+                    span.badge.rounded-pill.bg-warning.text-dark Pending Review
+
+    // System Status Card (Optional sidebar content)
+    .col-12.col-lg-4
+      .card.border-0.shadow-sm.rounded-4.bg-primary.text-white
+        .card-body.p-4
+          h5.fw-bold.mb-3 Quick Tips
+          p.small.opacity-75 Ensure all MDA Short Codes are unique before registering a new entity to avoid conflicts in reporting.
+          hr.opacity-25
+          a.btn.btn-light.btn-sm.fw-bold.w-100(href="/npa/mda") Manage MDAs

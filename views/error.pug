@@ -1,0 +1,11 @@
+doctype html
+html
+  head
+    title Error | NPA System
+    script(src="https://cdn.tailwindcss.com")
+  body.bg-gray-100.flex.items-center.justify-center.h-screen
+    .bg-white.p-8.rounded-lg.shadow-md.max-w-md.w-full.text-center
+      h1.text-4xl.font-bold.text-red-600.mb-4 Error #{status || 500}
+      p.text-gray-600.mb-6 #{message || 'Something went wrong.'}
+      //- Wrap the classes in quotes to prevent the colon from being read as a Pug filter
+      a(class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700" href="/login") Return to Login
