@@ -1,0 +1,126 @@
+extends ./layout
+
+block mda_content
+  input#planId(type="hidden" value=plan.id)
+  .container-fluid.py-4
+    //- Header Section
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h2.mb-0 Strategic Plan Setup
+        p.text-muted Programme: #{plan.Programme ? plan.Programme.programmeName : 'Not Assigned'}
+      .btn-group
+        button.btn.btn-outline-secondary(onclick="window.print()") 
+          i.fas.fa-print.me-2
+          | Export
+        button.btn.btn-primary(data-bs-toggle="modal" data-bs-target="#addObjectiveModal") 
+          i.fas.fa-plus.me-2
+          | Add Objective
+
+    //- The "Top to Bottom" List
+    if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
+      each obj in plan.SelectedObjectives
+        .card.shadow-sm.mb-5.border-start.border-4.border-primary
+          .card-header.bg-white.py-3
+            .row.align-items-center
+              .col
+                span.badge.bg-primary.mb-2 Objective #{obj.LibraryObjective.objectiveCode}
+                h5.card-title.mb-0 #{obj.orgObjective}
+              .col-auto
+                button.btn.btn-sm.btn-success(onclick=`prepareOutcomeModal(${obj.id}, ${obj.LibraryObjective.id}, "${obj.orgObjective}")`)
+                  i.fas.fa-plus.me-1
+                  | Add Outcome
+
+          .card-body.p-4
+            if obj.SelectedOutcomes && obj.SelectedOutcomes.length > 0
+              each oc in obj.SelectedOutcomes
+                //- Correctly nested Outcome Box
+                .outcome-box.mb-5.p-0.bg-white.rounded.border.shadow-sm
+                  .card-header.bg-light.border-bottom.py-3
+                    .d-flex.justify-content-between.align-items-center
+                      div
+                        span.badge.bg-info.text-dark.mb-1 OUTCOME: #{oc.LibraryOutcome.outcomeCode}
+                        h6.fw-bold.mb-0= oc.LibraryOutcome.outcomeName
+                      .btn-group
+                        button.btn.btn-xs.btn-outline-primary(onclick=`prepareIndicatorModal(${oc.id})`) 
+                          i.fas.fa-chart-line.me-1
+                          | + Indicator
+                        button.btn.btn-xs.btn-outline-info(onclick=`prepareIntermediateModal(${oc.id})`) 
+                          i.fas.fa-sitemap.me-1
+                          | + Intermediate
+
+                  .card-body.position-relative.pb-4
+                    //- Vertical connector line
+                    div(style="position:absolute; left:20px; top:0; bottom:0; width:2px; background:#e9ecef; z-index:0;")
+
+                    //- 1. INDICATORS SECTION
+                    if oc.SelectedIndicators && oc.SelectedIndicators.length > 0
+                      .ms-4.mb-4.position-relative(style="z-index:1")
+                        h6.text-uppercase.x-small.fw-bold.text-muted.mb-3 
+                          i.fas.fa-caret-down.me-2
+                          | Performance Indicators
+                        each ind in oc.SelectedIndicators
+                          .indicator-item.bg-white.p-3.border.rounded.mb-2.shadow-none(style="border-left: 3px solid #6c757d !important;")
+                            .row.align-items-center
+                              .col-md-5
+                                span.fw-bold.small= ind.LibraryIndicator.indicatorCode
+                                p.small.text-wrap.mb-0= ind.LibraryIndicator.indicator
+                              .col-md-7
+                                .row.g-0.text-center
+                                  .col
+                                    small.d-block.text-muted.x-small Baseline
+                                    span.badge.bg-light.text-dark.border= ind.baselineValue || '0'
+                                  each year in years
+                                    - let target = ind.Targets ? ind.Targets.find(t => t.fy == year) : null
+                                    .col
+                                      small.d-block.text-muted.x-small #{year}/#{year + 1}
+                                      span.fw-bold.small= target ? target.val : '-'
+
+                    //- 2. INTERMEDIATE OUTCOMES SECTION
+                    if oc.SelectedIntermediates && oc.SelectedIntermediates.length > 0
+                      .ms-4.position-relative(style="z-index:1")
+                        h6.text-uppercase.x-small.fw-bold.text-muted.mb-3 
+                          i.fas.fa-caret-down.me-2
+                          | Intermediate Outcomes
+                        each io in oc.SelectedIntermediates
+                          .intermediate-item.ps-3.mb-4.border-start.border-3.border-info
+                            .d-flex.justify-content-between.align-items-start
+                              div
+                                small.text-info.fw-bold.x-small= io.LibraryIntermediate.intermediateOutcomeCode
+                                h6.mb-1.small.fw-bold= io.LibraryIntermediate.intermediateOutcome
+                              button.btn.btn-link.btn-sm.text-success.p-0(onclick=`prepareInterventionModal(${io.id})`) 
+                                i.fas.fa-plus-circle
+                            
+                            //- 3. INTERVENTIONS SECTION
+                            if io.SelectedInterventions && io.SelectedInterventions.length > 0
+                              .ms-2.mt-2.bg-light.p-2.rounded.border-sm
+                                each inv in io.SelectedInterventions
+                                  .p-2.border-bottom(class="last-child-border-0")
+                                    div.d-flex.justify-content-between
+                                      small.text-success.fw-bold.x-small= inv.LibraryIntervention.interventionCode
+                                      small.text-muted.x-small Intervention
+                                    p.small.mb-0= inv.LibraryIntervention.intervention
+            else
+              .text-center.py-5.text-muted
+                i.fas.fa-link-slash.fa-2x.mb-2
+                p.small No outcomes linked to this objective.
+
+    else
+      .text-center.py-5.bg-light.rounded.border
+        i.fas.fa-clipboard-list.fa-3x.text-muted.mb-3
+        h4 No Objectives Added
+        button.btn.btn-primary.mt-2(data-bs-toggle="modal" data-bs-target="#addObjectiveModal") Add First Objective
+
+    //- Modal Includes
+    include ./modals/add_objective_modal.pug
+    include ./modals/add_outcome_modal.pug
+    include ./modals/add_indicator_modal.pug
+    include ./modals/add_intermediate_modal.pug
+    include ./modals/add_intervention_modal.pug
+
+  style.
+    .x-small { font-size: 0.75rem; }
+    .last-child-border-0:last-child { border-bottom: 0 !important; }
+    .indicator-item:hover { border-color: #0d6efd !important; transition: 0.3s; }
+    .outcome-box { overflow: hidden; }
+
+  script(src="/js/mda/plan-editor.js")

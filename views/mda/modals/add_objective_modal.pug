@@ -1,0 +1,22 @@
+#addObjectiveModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        h5.modal-title Add Strategic Objective
+        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-body
+        form#objectiveForm(action=`/mda/plans/${plan.id}/objectives` method="POST")
+          .mb-3
+            label.form-label Select Objective from Library
+            select.form-select.select2(name="objectiveId" required)
+              option(value="") -- Choose Objective --
+              each libObj in libraryObjectives
+                option(value=libObj.id) #{libObj.objectiveCode}: #{libObj.objectiveName}
+          
+          .mb-3
+            label.form-label Adapted Objective (Optional)
+            textarea.form-control(name="orgObjective" rows="2" placeholder="Describe how your MDA interprets this objective...")
+            
+      .modal-footer
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+        button.btn.btn-primary(type="submit" form="objectiveForm") Save Objective

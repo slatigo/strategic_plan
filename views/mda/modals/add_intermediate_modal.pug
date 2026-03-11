@@ -1,0 +1,22 @@
+#addIntermediateModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header.bg-light
+        h5.modal-title
+          i.fas.fa-project-diagram.me-2.text-primary
+          | Link Intermediate Outcome
+        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-body
+        .alert.alert-info.py-2
+          small.fw-bold Selected Parent Outcome: 
+          span#displayParentOutcome.small Loading...
+        
+        input#parentOutcomeId(type="hidden")
+        
+        .list-group#intermediateLibraryList
+          //- JS will populate this with standard Intermediate Outcomes
+          .text-center.py-4
+            .spinner-border.text-primary(role="status")
+            p.mt-2 Loading NDP standards...
+      .modal-footer
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel

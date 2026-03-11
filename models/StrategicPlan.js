@@ -24,6 +24,10 @@ module.exports = (sequelize) => {
         foreignKey: 'programmeId', 
         as: 'Programme' 
       });
+      this.hasMany(models.SpObjective, { 
+        foreignKey: 'planId', 
+        as: 'SelectedObjectives' 
+      });
     }
   }
 

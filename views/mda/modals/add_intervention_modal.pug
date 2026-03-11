@@ -1,0 +1,21 @@
+#addInterventionModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header.bg-light
+        h5.modal-title
+          i.fas.fa-tools.me-2.text-success
+          | Link Intervention
+        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-body
+        .alert.alert-success.py-2
+          small.fw-bold Parent Intermediate: 
+          span#displayParentIntermediate.small Loading...
+        
+        input#parentIntermediateId(type="hidden")
+        
+        #interventionLibraryList.list-group
+          //- Populated via AJAX
+          .text-center.py-3
+            p.text-muted Select an Intermediate Outcome first.
+      .modal-footer
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Close

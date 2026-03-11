@@ -1,0 +1,19 @@
+#addOutcomeModal.modal.fade(tabindex="-1")
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header.bg-success.text-white
+        h5.modal-title Link Outcome to Objective
+        button.btn-close.btn-close-white(data-bs-dismiss="modal")
+      .modal-body
+        p.small.text-muted Adding outcome for: 
+          strong#display_obj_name ...
+        
+        form#outcomeForm
+          input(type="hidden" id="modal_sp_objective_id")
+          .mb-3
+            label.form-label Select NDP Outcome
+            select.form-select#outcome_library_id(required)
+              option(value="" disabled selected) Loading outcomes...
+      .modal-footer
+        button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
+        button.btn.btn-success#saveOutcomeBtn Save Outcome

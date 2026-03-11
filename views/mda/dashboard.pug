@@ -77,8 +77,10 @@ block mda_content
                       when 'Pending Correction'
                         span.badge.bg-warning Pending Correction
                   td.text-end.px-4
-                    a.btn.btn-sm.btn-outline-primary(href=`/mda/plans/${plan.id}`) 
-                      i.fas.fa-eye
+                      //- Change the URL to the /edit route we just created
+                      a.btn.btn-sm.btn-outline-primary(href=`/mda/plans/${plan.id}/edit` title="Edit/Setup Plan") 
+                        i.fas.fa-edit.me-1
+                        | Setup
       else
         .p-5.text-center
           p.text-muted No plans created yet. Use an open call above to start.
