@@ -9,6 +9,14 @@ module.exports = (sequelize) => {
         foreignKey: 'mda_id', // Changed from organization_id
         as: 'admins'
       });
+      this.hasMany(models.Office, { 
+        foreignKey: 'mda_id', // Recommended to use the actual DB column name
+        as: 'Offices' 
+      });
+      this.hasMany(models.BudgetSource, { 
+        foreignKey: 'mda_id', 
+        as: 'BudgetSources' 
+      });
       
       // Future-proofing: An MDA will own submissions
       // this.hasMany(models.Submission, { foreignKey: 'mda_id', as: 'submissions' });

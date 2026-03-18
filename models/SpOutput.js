@@ -40,11 +40,6 @@ module.exports = (sequelize) => {
       field: 'output_id',
       allowNull: false 
     },
-    planId: { 
-      type: DataTypes.INTEGER, 
-      field: 'plan_id',
-      allowNull: false 
-    }
   }, { 
     sequelize, 
     modelName: 'SpOutput', 

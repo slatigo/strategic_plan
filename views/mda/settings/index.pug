@@ -1,0 +1,93 @@
+extends ../layout
+
+block mda_content
+  style.
+      #settingsTabs .nav-link {
+          color: #555;
+          background-color: #f1f1f1;
+          border: 1px solid #dee2e6;
+          margin-right: 2px;
+      }
+      #settingsTabs .nav-link:hover {
+          background-color: #e9ecef;
+      }
+      #settingsTabs .nav-link.active {
+          color: #fff !important;
+          background-color: #3498db !important; /* var(--mda-accent) */
+          border-color: #3498db !important;
+      }
+  h2.h4.mb-4 MDA Configuration
+  
+  ul#settingsTabs.nav.nav-tabs(role="tablist")
+    li.nav-item
+      button#offices-tab.nav-link.active(data-bs-toggle="tab" data-bs-target="#offices" type="button" role="tab") Offices & Units
+    li.nav-item
+      button#budget-tab.nav-link(data-bs-toggle="tab" data-bs-target="#budget" type="button" role="tab") Budget Sources
+
+  .tab-content.bg-white.p-4.border.border-top-0.rounded-bottom.shadow-sm
+    //- Offices Panel
+    #offices.tab-pane.fade.show.active(role="tabpanel")
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h5.mb-0 Offices & Units
+        button.btn.btn-sm.btn-primary(onclick="openOfficeModal()") 
+          i.fas.fa-plus.me-1
+          | Add Office
+      
+      .table-responsive
+        table.table.table-hover.align-middle
+          thead.table-light
+            tr
+              th Office Name
+              th Code
+              th.text-end Actions
+          tbody
+            if (offices && offices.length > 0)
+              each off in (offices)
+                tr
+                  td= off.name
+                  td: code= off.code || 'N/A'
+                  td.text-end
+                    button.btn.btn-sm.btn-outline-primary.me-2(onclick=`openOfficeModal(${JSON.stringify(off)})`)
+                      i.fas.fa-edit
+                    button.btn.btn-sm.btn-outline-danger(onclick=`deleteItem('offices', ${off.id})`)
+                      i.fas.fa-trash
+            else
+              tr: td.text-center.py-4.text-muted(colspan="3") No offices found.
+
+    //- Budget Panel
+    #budget.tab-pane.fade(role="tabpanel")
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h5.mb-0 Budget Sources
+        button.btn.btn-sm.btn-primary(onclick="openBudgetModal()") 
+          i.fas.fa-plus.me-1
+          | Add Source
+      
+      .table-responsive
+        table.table.table-hover.align-middle
+          thead.table-light
+            tr
+              th Source Name
+              th Code
+              th.text-end Actions
+          tbody
+            if (budgetSources && budgetSources.length > 0)
+              each src in budgetSources
+                tr
+                  td= src.name
+                  td: code= src.code || 'N/A'
+                  td.text-end
+                    button.btn.btn-sm.btn-outline-primary.me-2(onclick=`openBudgetModal(${JSON.stringify(src)})`)
+                      i.fas.fa-edit
+                    button.btn.btn-sm.btn-outline-danger(onclick=`deleteItem('budget-sources', ${src.id})`)
+                      i.fas.fa-trash
+            else
+              tr: td.text-center.py-4.text-muted(colspan="3") No budget sources found.
+
+  //- Include Modals
+  include ./modals.pug
+
+//- MOVE STYLE TO ROOT LEVEL
+
+
+block scripts
+  script(src="/js/mda/settings.js")

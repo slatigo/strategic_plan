@@ -1,18 +1,38 @@
 'use strict';
-const { Model, DataTypes } = require('sequelize');
+const { Model } = require('sequelize');
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   class SpOutputActionBudget extends Model {
     static associate(models) {
-      this.belongsTo(models.SpOutputAction, { foreignKey: 'spOutputActionId', as: 'Action' });
+      // Link back to the parent Action
+      this.belongsTo(models.SpOutputAction, { 
+        foreignKey: 'spOutputActionId', 
+        as: 'Action' 
+      });
     }
   }
+
   SpOutputActionBudget.init({
-    fy: { type: DataTypes.STRING, allowNull: false },
-    spOutputActionId: { type: DataTypes.INTEGER, field: 'sp_output_action_id' },
-    val: { type: DataTypes.STRING, allowNull: false },
-    planId: { type: DataTypes.INTEGER, field: 'plan_id' },
-    budgetSource: { type: DataTypes.STRING, field: 'budget_source' }
-  }, { sequelize, modelName: 'SpOutputActionBudget', tableName: 'sp_output_action_budgets', underscored: true });
+    fy: { 
+      type: DataTypes.STRING(20), 
+      allowNull: false 
+    },
+    spOutputActionId: { 
+      type: DataTypes.INTEGER, 
+      field: 'sp_output_action_id',
+      allowNull: false
+    },
+    val: { 
+      type: DataTypes.STRING, 
+      allowNull: false 
+    }
+    // REMOVED: budgetSource and responsibleOffice are now in the parent table
+  }, { 
+    sequelize, 
+    modelName: 'SpOutputActionBudget', 
+    tableName: 'sp_output_action_budgets', 
+    underscored: true 
+  });
+
   return SpOutputActionBudget;
 };

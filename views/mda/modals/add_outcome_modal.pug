@@ -9,11 +9,13 @@
           strong#display_obj_name ...
         
         form#outcomeForm
-          input(type="hidden" id="modal_sp_objective_id")
+          //- Added 'name' so it's easier to grab via FormData
+          input(type="hidden" id="modal_sp_objective_id" name="spObjectiveId")
           .mb-3
             label.form-label Select NDP Outcome
-            select.form-select#outcome_library_id(required)
+            select.form-select#outcome_library_id(name="outcomeId" required)
               option(value="" disabled selected) Loading outcomes...
       .modal-footer
-        button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
-        button.btn.btn-success#saveOutcomeBtn Save Outcome
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+        //- Ensure this is inside the footer
+        button.btn.btn-success#saveOutcomeBtn(type="button") Save Outcome

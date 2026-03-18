@@ -41,7 +41,12 @@ html(lang="en")
 
           hr.mx-3.text-white-50
           
-          a.nav-link(href="/mda/settings" class=activePage === 'settings' ? 'active' : '')
+          hr.mx-3.text-white-50
+          
+          .sidebar-heading.pt-0.pb-2.small.text-uppercase.text-white-50 Configuration
+          
+          //- Unified Settings Link
+          a.nav-link(href="/mda/settings" class=(activePage === 'settings' || activePage === 'offices' || activePage === 'budgetSources') ? 'active' : '')
             i.fas.fa-gears.me-3
             | MDA Settings
 

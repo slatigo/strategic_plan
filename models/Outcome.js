@@ -3,14 +3,22 @@ const { Model, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   class Outcome extends Model {
-    static associate(models) {
-      this.belongsTo(models.Objective, { foreignKey: 'objectiveId', as: 'LibraryObjective' });
-      this.hasMany(models.SpOutcome, { foreignKey: 'outcomeId', as: 'Selections' });
-      this.hasMany(models.SpOutcomeIndicator, { 
-        foreignKey: 'sp_outcome_id', 
-        as: 'SelectedIndicators' 
-      });
-    }
+    // models/Outcome.js
+      static associate(models) {
+        if (models.Objective) {
+          this.belongsTo(models.Objective, { foreignKey: 'objectiveId', as: 'LibraryObjective' });
+        }
+        // This is likely where it's failing because SpOutcome loads later
+        if (models.SpOutcome) {
+          this.hasMany(models.SpOutcome, { foreignKey: 'outcomeId', as: 'Selections' });
+        }
+        if (models.SpOutcomeIndicator) {
+          this.hasMany(models.SpOutcomeIndicator, { 
+            foreignKey: 'spOutcomeId', // Check if this should be outcomeId or spOutcomeId
+            as: 'SelectedIndicators' 
+          });
+        }
+      }
   }
 
   Outcome.init({

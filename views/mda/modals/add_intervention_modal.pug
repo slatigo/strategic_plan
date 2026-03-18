@@ -1,21 +1,22 @@
 #addInterventionModal.modal.fade(tabindex="-1" aria-hidden="true")
-  .modal-dialog.modal-lg
+  .modal-dialog
     .modal-content
-      .modal-header.bg-light
-        h5.modal-title
-          i.fas.fa-tools.me-2.text-success
-          | Link Intervention
-        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-header.bg-success.text-white
+        h5.modal-title 
+          i.fas.fa-plus-circle.me-2
+          | Add Intervention
+        button.btn-close.btn-close-white(data-bs-dismiss="modal" aria-label="Close")
       .modal-body
-        .alert.alert-success.py-2
-          small.fw-bold Parent Intermediate: 
-          span#displayParentIntermediate.small Loading...
-        
-        input#parentIntermediateId(type="hidden")
-        
-        #interventionLibraryList.list-group
-          //- Populated via AJAX
-          .text-center.py-3
-            p.text-muted Select an Intermediate Outcome first.
+        form#interventionForm
+          input#modal_sp_int_parent_id(type="hidden" name="spIntermediateOutcomeId")
+          input(type="hidden" name="planId" value=plan.id)
+          
+          .mb-3
+            label.form-label.fw-bold Select Intervention
+            select#libraryInvSelect.form-select(name="libraryInterventionId" required)
+              option(value="") -- Select Intervention --
+            .form-text Select the specific activity or intervention required to achieve the intermediate outcome.
+
       .modal-footer
-        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Close
+        button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
+        button.btn.btn-success(type="submit" form="interventionForm") Save Intervention

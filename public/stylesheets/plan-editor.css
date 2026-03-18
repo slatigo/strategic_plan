@@ -1,0 +1,17 @@
+/* Vertical line logic for nested hierarchy */
+.outcome-box {
+    position: relative;
+    border-left: 5px solid #0dcaf0 !important; /* Cyan for outcomes */
+}
+
+.intermediate-item {
+    margin-left: 1rem;
+    border-left: 3px solid #6610f2 !important; /* Indigo for intermediates */
+}
+
+.intervention-card {
+    border-left: 3px solid #198754 !important; /* Green for interventions */
+}
+
+.x-small { font-size: 0.75rem; }
+.btn-xs { padding: 0.1rem 0.3rem; font-size: 0.7rem; }

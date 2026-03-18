@@ -1,0 +1,39 @@
+//- Office Modal
+#officeModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog
+    .modal-content
+      form(action="/mda/settings/offices/save" method="POST")
+        .modal-header
+          h5#officeModalLabel.modal-title Add Office
+          button.btn-close(type="button" data-bs-dismiss="modal")
+        .modal-body
+          input#off_id(type="hidden" name="id")
+          .mb-3
+            label.form-label Office Name
+            input#off_name.form-control(name="name" required placeholder="e.g. Finance Department")
+          .mb-3
+            label.form-label Short Code
+            input#off_code.form-control(name="code" placeholder="e.g. FIN")
+        .modal-footer
+          button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+          button.btn.btn-primary(type="submit") Save Office
+
+//- Budget Source Modal
+#budgetModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog
+    .modal-content
+      form(action="/mda/settings/budget-sources/save" method="POST")
+        .modal-header
+          h5#budgetModalLabel.modal-title Add Budget Source
+          button.btn-close(type="button" data-bs-dismiss="modal")
+        .modal-body
+          input#src_id(type="hidden" name="id")
+          .mb-3
+            label.form-label Source Name
+            input#src_name.form-control(name="name" required placeholder="e.g. Internally Generated Funds")
+          .mb-3
+            label.form-label Short Code
+            input#src_code.form-control(name="code" placeholder="e.g. IGF")
+        .modal-footer
+          button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+          button.btn.btn-primary(type="submit") Save Source

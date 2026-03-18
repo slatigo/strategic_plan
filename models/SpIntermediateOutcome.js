@@ -3,39 +3,28 @@ const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class SpIntermediateOutcome extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
-    static associate(models) {
-      // 1. Link to the Parent Selection (Selected Outcome)
-      this.belongsTo(models.SpOutcome, { 
-        foreignKey: 'sp_outcome_id', 
-        as: 'SelectedOutcome' 
-      });
+    // models/sp_intermediate_outcome.js
+      static associate(models) {
+        if (models.SpOutcome) {
+          this.belongsTo(models.SpOutcome, { foreignKey: 'spOutcomeId', as: 'SelectedOutcome' });
+        }
 
-      // 2. Link to the Library definition (NDP Standard)
-      this.belongsTo(models.IntermediateOutcome, { 
-        foreignKey: 'intermediate_outcome_id', 
-        as: 'LibraryIntermediate' 
-      });
+        if (models.IntermediateOutcome) {
+          this.belongsTo(models.IntermediateOutcome, { foreignKey: 'intermediateOutcomeId', as: 'LibraryIntermediate' });
+        }
 
-      // 3. Link to Children (Selected Interventions)
-      this.hasMany(models.SpIntervention, { 
-        foreignKey: 'sp_intermediate_outcome_id', 
-        as: 'SelectedInterventions' 
-      });
-      
-      // 4. Link to Selected Indicators
-      this.hasMany(models.SpIntermediateOutcomeIndicator, { 
-        foreignKey: 'sp_intermediate_outcome_id', 
-        as: 'SelectedIndicators' 
-      });
-    }
+        if (models.SpIntervention) {
+          this.hasMany(models.SpIntervention, { foreignKey: 'spIntermediateOutcomeId', as: 'SelectedInterventions' });
+        }
+        
+        if (models.SpIntermediateOutcomeIndicator) {
+          this.hasMany(models.SpIntermediateOutcomeIndicator, { foreignKey: 'spIntermediateOutcomeId', as: 'SelectedIndicators' });
+        }
+      }
   }
 
   SpIntermediateOutcome.init({
+    // These property names (camelCase) are what associations should reference
     spOutcomeId: { 
       type: DataTypes.INTEGER, 
       field: 'sp_outcome_id',
@@ -46,11 +35,6 @@ module.exports = (sequelize, DataTypes) => {
       field: 'intermediate_outcome_id',
       allowNull: false 
     },
-    planId: { 
-      type: DataTypes.INTEGER, 
-      field: 'plan_id',
-      allowNull: false 
-    }
   }, {
     sequelize,
     modelName: 'SpIntermediateOutcome',

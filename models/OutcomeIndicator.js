@@ -8,21 +8,23 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate(models) {
-      // Link back to the Library Outcome (Parent)
-      this.belongsTo(models.Outcome, { 
-        foreignKey: 'outcome_id', 
-        as: 'ParentOutcome' 
-      });
+    // models/OutcomeIndicator.js
+      static associate(models) {
+        if (models.Outcome) {
+          this.belongsTo(models.Outcome, { 
+            foreignKey: 'outcome_id', 
+            as: 'ParentOutcome' 
+          });
+        }
 
-      // Link to the MDA selections (Children)
-      // This is what SpOutcomeIndicator.belongsTo(models.OutcomeIndicator) looks for!
-      this.hasMany(models.SpOutcomeIndicator, { 
-        foreignKey: 'outcome_indicator_id', 
-        as: 'Selections' 
-      });
-      
-    }
+        // Guard this because SpOutcomeIndicator loads at the end of the alphabet
+        if (models.SpOutcomeIndicator) {
+          this.hasMany(models.SpOutcomeIndicator, { 
+            foreignKey: 'outcome_indicator_id', 
+            as: 'Selections' 
+          });
+        }
+      }
   }
 
   OutcomeIndicator.init({

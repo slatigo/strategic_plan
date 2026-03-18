@@ -1,35 +1,41 @@
 'use strict';
-const { Model } = require('sequelize'); // REMOVED: DataTypes from here
+const { Model } = require('sequelize');
 
-module.exports = (sequelize, DataTypes) => { // ADDED: DataTypes here
+module.exports = (sequelize, DataTypes) => {
   class SpOutcomeIndicator extends Model {
-      static associate(models) {
-        // 1. Link back to the parent selection
-        this.belongsTo(models.SpOutcome, { 
-            foreignKey: 'sp_outcome_id', 
-            as: 'SelectedOutcome' 
-        });
+    static associate(models) {
+      this.belongsTo(models.OutcomeIndicator, { 
+        foreignKey: 'outcomeIndicatorId', 
+        as: 'LibraryIndicator' 
+      });
 
-        // 2. Link to the library/standard definition
-        this.belongsTo(models.OutcomeIndicator, { 
-            foreignKey: 'outcome_indicator_id', 
-            as: 'LibraryIndicator' 
-        });
+      this.belongsTo(models.SpOutcome, { 
+        foreignKey: 'spOutcomeId', 
+        as: 'SelectedOutcome' 
+      });
 
-        // 3. Link to the targets (yearly values)
-        this.hasMany(models.SpOutcomeIndicatorTarget, {
-            foreignKey: 'sp_outcome_indicator_id',
-            as: 'Targets'
+      this.hasMany(models.SpOutcomeIndicatorTarget, { 
+        foreignKey: 'spOutcomeIndicatorId', 
+        as: 'Targets' 
+      });
+
+      // Align this with your new "Responsible Office" logic
+      if (models.Office) {
+        this.belongsTo(models.Office, {
+          foreignKey: 'responsibleOfficeId',
+          as: 'ResponsibleOffice'
         });
+      }
     }
   }
 
   SpOutcomeIndicator.init({
     outcomeIndicatorId: { type: DataTypes.INTEGER, field: 'outcome_indicator_id' },
     spOutcomeId: { type: DataTypes.INTEGER, field: 'sp_outcome_id' },
-    adaptedOutcomeIndicator: { type: DataTypes.STRING, field: 'adapted_outcome_indicator' },
-    responsibleOffice: { type: DataTypes.STRING, field: 'responsible_office' },
-    planId: { type: DataTypes.INTEGER, field: 'plan_id' }
+    adaptedOutcomeIndicator: { type: DataTypes.TEXT, field: 'adapted_outcome_indicator' },
+    baselineValue: { type: DataTypes.STRING, field: 'baseline_value' },
+    responsibleOfficeId: { type: DataTypes.INTEGER, field: 'responsible_office_id' },
+    dataSource: { type: DataTypes.TEXT, field: 'data_source' }
   }, { 
     sequelize, 
     modelName: 'SpOutcomeIndicator', 

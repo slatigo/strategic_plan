@@ -4,23 +4,31 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class SpOutputIndicator extends Model {
     static associate(models) {
-      // 1. Link to the Library Indicator (NDP Standard)
+      // 1. Link to the Library Indicator
       this.belongsTo(models.OutputIndicator, { 
-        foreignKey: 'output_indicator_id', 
+        foreignKey: 'outputIndicatorId', 
         as: 'LibraryIndicator' 
       });
 
       // 2. Link to the Parent Selected Output
       this.belongsTo(models.SpOutput, { 
-        foreignKey: 'sp_output_id', 
+        foreignKey: 'spOutputId', 
         as: 'SelectedOutput' 
       });
 
-      // 3. Link to the Children (The 5-year Targets)
+      // 3. Targets
       this.hasMany(models.SpOutputIndicatorTarget, { 
-        foreignKey: 'sp_output_indicator_id', 
+        foreignKey: 'spOutputIndicatorId', 
         as: 'Targets' 
       });
+
+      // NEW: Responsible Office Link (Matching the others)
+      if (models.Office) {
+        this.belongsTo(models.Office, {
+          foreignKey: 'responsibleOfficeId',
+          as: 'ResponsibleOffice'
+        });
+      }
     }
   }
 
@@ -36,18 +44,26 @@ module.exports = (sequelize) => {
       allowNull: false 
     },
     adaptedOutputIndicator: { 
-      type: DataTypes.STRING(255), 
+      type: DataTypes.TEXT, // Changed to TEXT for longer descriptions
       field: 'adapted_output_indicator',
-      defaultValue: '0' 
+      allowNull: true, 
+      defaultValue: null 
     },
-    officeId: { 
-      type: DataTypes.INTEGER, 
-      field: 'office_id' 
+    baselineValue: { 
+      type: DataTypes.STRING, 
+      field: 'baseline_value' 
     },
-    planId: { 
+    // RENAME: from officeId to responsibleOfficeId for consistency
+    responsibleOfficeId: { 
       type: DataTypes.INTEGER, 
-      field: 'plan_id',
-      allowNull: false 
+      field: 'responsible_office_id',
+      allowNull: true
+    },
+    // NEW: Added for consistency with Intermediate model
+    dataSource: {
+      type: DataTypes.TEXT,
+      field: 'data_source',
+      allowNull: true
     }
   }, { 
     sequelize, 

@@ -1,17 +1,36 @@
 'use strict';
-const { Model, DataTypes } = require('sequelize');
+const { Model } = require('sequelize');
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => { // Use the passed DataTypes
   class SpIntermediateOutcomeIndicatorTarget extends Model {
     static associate(models) {
-      this.belongsTo(models.SpIntermediateOutcomeIndicator, { foreignKey: 'sp_intermediate_outcome_indicator_id', as: 'Indicator' });
+      // Use camelCase to match the property defined in .init()
+      this.belongsTo(models.SpIntermediateOutcomeIndicator, { 
+        foreignKey: 'spIntermediateOutcomeIndicatorId', 
+        as: 'Indicator' 
+      });
     }
   }
+
   SpIntermediateOutcomeIndicatorTarget.init({
-    fy: { type: DataTypes.STRING(20), allowNull: false },
-    spIntermediateOutcomeIndicatorId: { type: DataTypes.INTEGER, field: 'sp_intermediate_outcome_indicator_id' },
-    val: { type: DataTypes.STRING(40) },
-    planId: { type: DataTypes.INTEGER, field: 'plan_id' }
-  }, { sequelize, modelName: 'SpIntermediateOutcomeIndicatorTarget', tableName: 'sp_intermediate_outcome_indicator_targets', underscored: true });
+    fy: { 
+      type: DataTypes.STRING(20), 
+      allowNull: false 
+    },
+    spIntermediateOutcomeIndicatorId: { 
+      type: DataTypes.INTEGER, 
+      field: 'sp_intermediate_outcome_indicator_id' 
+    },
+    val: { 
+      type: DataTypes.STRING(40) 
+    },
+  }, { 
+    sequelize, 
+    modelName: 'SpIntermediateOutcomeIndicatorTarget', 
+    tableName: 'sp_intermediate_outcome_indicator_targets', 
+    underscored: true,
+    timestamps: false // Usually targets don't need created_at unless specified
+  });
+
   return SpIntermediateOutcomeIndicatorTarget;
 };

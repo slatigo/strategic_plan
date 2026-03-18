@@ -2,50 +2,75 @@ const express = require('express');
 const router = express.Router();
 const plannerController = require('../controllers/mda/plannerController');
 const planController = require('../controllers/mda/planController');
-// Import the updated middleware functions
+const settings = require('../controllers/mda/mdaSettingsController');
 const { protect, restrictTo } = require('../middleware/authMiddleWare.js');
 
-/** * AUTHENTICATION & AUTHORIZATION 
- * 1. protect: Verifies the JWT npa_token
- * 2. restrictTo: Ensures only 'MDA Admin' roles pass through
+/**
+ * STRATEGIC PLAN MODERATOR ROUTES
+ * Organized by Hierarchy: Plan > Objective > Outcome > Intermediate > Intervention > Output > Action
  */
+
+// Global Security Middleware
 router.use(protect);
 router.use(restrictTo('mda_admin'));
 
-// --- VIEW ROUTES ---
-
-// Main Dashboard for the Planner (Shows Active Plans & Open Calls)
+// --- 1. CORE VIEW ROUTES ---
 router.get('/dashboard', plannerController.getDashboard);
-// --- API ROUTES ---
-
-// 1. Render the main editor page
 router.get('/plans/:id/edit', planController.getPlanEditor);
 
-// 2. API: Add an objective to the plan (Called by your plan-editor.js)
+// --- 2. OBJECTIVE MANAGEMENT ---
 router.post('/plans/objectives/add', planController.addObjective);
-
-// 3. API: Remove an objective (Useful for the 'Delete' button in your table)
 router.delete('/plans/objectives/:id', planController.removeObjective);
 
-/** 2. API: Get Library Outcomes
- * Used by the modal to fetch outcomes for a specific objective
- * URL: /mda/api/library-outcomes?objectiveId=X&spObjectiveId=Y
- */
+// --- 3. OUTCOME & OUTCOME INDICATORS ---
 router.get('/api/library-outcomes', planController.getLibraryOutcomes);
-
- //* 3. POST: Add Outcome
 router.post('/plans/outcomes/add', planController.addOutcome);
-// Get indicators for the dropdown based on the selected Outcome
-router.get('/api/library-indicators-by-outcome/:spOutcomeId', planController.getLibraryIndicatorsBySpOutcome);
+router.delete('/api/plan/outcome/:id', planController.deleteOutcome);
 
-// Save the Indicator and its 5-year targets
+// Fetch Library Indicators by selected SP Outcome
+router.get('/api/library-indicators-by-outcome/:spOutcomeId', planController.getLibraryIndicatorsBySpOutcome);
 router.post('/plans/indicators/save', planController.saveOutcomeIndicator);
 
-//router.post('/plans/interventions/add', planController.addIntervention);
-//router.post('/plans/outputs/add', planController.addOutput);
-module.exports = router;
+// --- 4. INTERMEDIATE OUTCOME & INDICATORS ---
+router.get('/api/library/intermediate-outcomes/:spOutcomeId', planController.getLibraryIntermediates);
+router.post('/api/plan/save-intermediate', planController.addIntermediateOutcome);
+router.delete('/api/plan/intermediate/:id', planController.deleteIntermediate);
 
-// Logic to handle the "Back and Forth" re-submission
-//router.post('/api/plans/:id/submit', plannerController.submitPlan);
+// Fetch Library Indicators by selected SP Intermediate Outcome
+router.get('/api/library/intermediate-indicators/:spIntermediateOutcomeId', planController.getLibraryIntIndicators);
+router.post('/api/plan/save-int-indicator', planController.saveIntermediateOutcomeIndicator);
+
+// --- 5. INTERVENTION MANAGEMENT ---
+router.get('/api/library/interventions/:spIntermediateOutcomeId', planController.getLibraryInterventions);
+router.post('/api/plan/save-intervention', planController.saveIntervention);
+router.delete('/api/plan/intervention/:id', planController.deleteIntervention);
+
+// --- 6. OUTPUT & OUTPUT INDICATORS ---
+router.get('/api/library/outputs-by-intervention/:spInterventionId', planController.getLibraryOutputsByIntervention);
+router.post('/api/plan/save-output', planController.saveOutput);
+router.delete('/api/plan/delete-output/:id', planController.deleteOutput);
+
+// FIXED: Added missing route for Output Indicator Library fetching
+router.get('/api/library/output-indicators/:spOutputId', planController.getLibraryOutputIndicators);
+router.post('/api/plan/save-output-indicator', planController.saveOutputIndicator);
+
+// --- 7. ACTIONS & BUDGETS ---
+router.get('/api/library/actions-by-output/:spOutputId', planController.getLibraryActionsByOutput);
+router.post('/api/plan/save-output-action', planController.saveOutputAction);
+router.delete('/api/plan/delete-output-action/:id', planController.deleteOutputAction);
+
+// --- 8. UNIFIED INDICATOR UTILITIES (DETAILS & DELETION) ---
+// Used for the "Edit" fetch and "Delete" actions across all levels
+router.get('/api/plan/indicator-details/:level/:id', planController.getIndicatorDetails);
+router.delete('/api/plan/remove-indicator/:level/:id', planController.deleteIndicator);
+
+// All settings routes grouped
+router.get('/settings', settings.getSettingsOverview);
+
+router.post('/settings/offices/save', settings.saveOffice);
+router.delete('/settings/offices/:id', settings.deleteOffice);
+
+router.post('/settings/budget-sources/save', settings.saveBudgetSource);
+router.delete('/settings/budget-sources/:id', settings.deleteBudgetSource);
 
 module.exports = router;

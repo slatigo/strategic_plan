@@ -1,22 +1,20 @@
-#addIntermediateModal.modal.fade(tabindex="-1" aria-hidden="true")
-  .modal-dialog.modal-lg
+#addIntermediateModal.modal.fade(tabindex="-1")
+  .modal-dialog
     .modal-content
-      .modal-header.bg-light
-        h5.modal-title
-          i.fas.fa-project-diagram.me-2.text-primary
-          | Link Intermediate Outcome
-        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-header
+        h5.modal-title Add Intermediate Outcome
+        button.btn-close(data-bs-dismiss="modal")
       .modal-body
-        .alert.alert-info.py-2
-          small.fw-bold Selected Parent Outcome: 
-          span#displayParentOutcome.small Loading...
-        
-        input#parentOutcomeId(type="hidden")
-        
-        .list-group#intermediateLibraryList
-          //- JS will populate this with standard Intermediate Outcomes
-          .text-center.py-4
-            .spinner-border.text-primary(role="status")
-            p.mt-2 Loading NDP standards...
+        form#intermediateForm
+          //- This is the vital link
+          input#modal_parent_outcome_id(type="hidden" name="spOutcomeId")
+          input(type="hidden" name="planId" value=plan.id)
+          
+          .mb-3
+            label.form-label Select from Library
+            select#libraryIntSelect.form-select(name="libraryIntId" required)
+                option(value="") -- Select Intermediate Outcome --
+    
       .modal-footer
-        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+        button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
+        button.btn.btn-primary(type="submit" form="intermediateForm") Save Selection

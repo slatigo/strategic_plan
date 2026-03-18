@@ -11,7 +11,6 @@ module.exports = (sequelize) => {
     fy: { type: DataTypes.STRING(11), allowNull: false },
     spOutputIndicatorId: { type: DataTypes.INTEGER, field: 'sp_output_indicator_id' },
     val: { type: DataTypes.STRING(40), allowNull: false },
-    planId: { type: DataTypes.INTEGER, field: 'plan_id' }
   }, { sequelize, modelName: 'SpOutputIndicatorTarget', tableName: 'sp_output_indicator_targets', underscored: true });
   return SpOutputIndicatorTarget;
 };

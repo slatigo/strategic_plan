@@ -1,0 +1,21 @@
+#outputModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header.bg-success.text-white
+        h5.modal-title Link Output to Intervention
+        button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
+      .modal-body
+        form#outputForm(action="/mda/api/plan/save-output" method="POST")
+          input(type="hidden" name="id")
+          input#modal_output_intervention_id(type="hidden" name="spInterventionId")
+          input(type="hidden" name="planId" value=plan.id)
+          
+          .mb-3
+            label.form-label Select Output from Library
+            select#output_select.form-select(name="outputId" required)
+              option(value="") -- Select Output --
+            small.text-muted Pick the standard output defined in the National Development Plan.
+
+      .modal-footer
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+        button.btn.btn-success(type="submit" form="outputForm") Link Output
