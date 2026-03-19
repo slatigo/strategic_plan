@@ -1,0 +1,117 @@
+extends ../layout
+
+block mda_content
+  //- Header Section
+  .d-sm-flex.align-items-center.justify-content-between.mb-4
+    div
+      h1.h3.mb-0.text-gray-800 
+        i.fas.fa-tasks.me-2.text-primary
+        | Quarterly Progress Reports
+      p.text-muted.small.mb-0 Track and submit your MDA's actual performance against strategic targets.
+    nav(aria-label="breadcrumb")
+      ol.breadcrumb
+        li.breadcrumb-item: a(href="/mda/dashboard") Dashboard
+        li.breadcrumb-item.active Quarterly Reports
+
+  //- Status Summary Cards (Optional but looks professional)
+  .row.mb-4
+    .col-xl-3.col-md-6.mb-4
+      .card.border-left-primary.shadow.h-100.py-2
+        .card-body
+          .row.no-gutters.align-items-center
+            .col.mr-2
+              .text-xs.font-weight-bold.text-primary.text-uppercase.mb-1 Total Windows
+              .h5.mb-0.font-weight-bold.text-gray-800 #{reportCalls.length}
+            .col-auto
+              i.fas.fa-calendar.fa-2x.text-gray-300
+
+  //- Main Table Card
+  .card.shadow.mb-4
+    .card-header.py-3.bg-white.d-flex.justify-content-between.align-items-center
+      h6.m-0.font-weight-bold.text-primary Active & Past Reporting Cycles
+      span.badge.bg-primary.rounded-pill #{reportCalls.length} Periods Found
+    
+    .card-body
+      if reportCalls && reportCalls.length > 0
+        .table-responsive
+          table.table.table-hover.align-middle
+            thead.table-light
+              tr
+                th(style="width: 30%") Reporting Period
+                th Deadline
+                th Status
+                th Last Updated
+                th.text-end Actions
+            tbody
+              each call in reportCalls
+                - const submission = call.MdaSubmissions && call.MdaSubmissions.length > 0 ? call.MdaSubmissions[0] : null
+                
+                tr
+                  td
+                    //- FIX: Using the getName() helper from your model
+                    .fw-bold.text-dark #{call.getName()}
+                    small.text-muted #{call.description || `Reporting for ${call.quarter} of FY ${call.reportingYear}`}
+                  
+                  td
+                    //- Using deadline from your ReportCall model
+                    span.text-dark
+                      i.far.fa-calendar-alt.me-2.text-muted
+                      | #{new Date(call.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  
+                  td
+                    if !submission
+                      span.badge.rounded-pill.bg-light.text-secondary.border Not Started
+                    else
+                      case submission.status
+                        when 'Draft'
+                          span.badge.rounded-pill.bg-warning.text-dark 
+                            i.fas.fa-edit.me-1
+                            | Draft
+                        when 'Submitted'
+                          span.badge.rounded-pill.bg-info.text-white 
+                            i.fas.fa-paper-plane.me-1
+                            | Submitted
+                        when 'Approved'
+                          span.badge.rounded-pill.bg-success 
+                            i.fas.fa-check-circle.me-1
+                            | Approved
+                        when 'Needs Revision'
+                          span.badge.rounded-pill.bg-danger 
+                            i.fas.fa-exclamation-triangle.me-1
+                            | Revision Required
+                  
+                  td.small.text-muted
+                    if submission
+                      | #{new Date(submission.updatedAt).toLocaleDateString()}
+                    else
+                      | --
+                  
+                  td.text-end
+                    if !submission
+                      //- No report exists yet, link to the "Start" logic in the controller
+                      a.btn.btn-sm.btn-primary.shadow-sm.px-3(href=`/mda/reports/start/${call.id}`)
+                        i.fas.fa-play.me-1
+                        | Start Report
+                    else
+                      if submission.status === 'Draft' || submission.status === 'Needs Revision'
+                        //- Report is editable
+                        a.btn.btn-sm.btn-outline-primary.shadow-sm.px-3(href=`/mda/reports/edit/${submission.id}`)
+                          i.fas.fa-pencil-alt.me-1
+                          | Continue
+                      else
+                        //- Report is locked for viewing only
+                        a.btn.btn-sm.btn-outline-secondary.shadow-sm.px-3(href=`/mda/reports/view/${submission.id}`)
+                          i.fas.fa-eye.me-1
+                          | View Results
+      else
+        .text-center.py-5
+          img(src="/img/empty-reports.svg" style="width: 150px; opacity: 0.5" alt="No Reports")
+          h5.mt-3.text-gray-400 No reporting windows are currently open.
+          p.text-muted Check back later or contact the system administrator.
+
+block scripts
+  script.
+    $(document).ready(function() {
+      // Any specific JS for the landing page can go here
+      console.log("Reporting Index Loaded");
+    });

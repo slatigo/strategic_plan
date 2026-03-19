@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const plannerController = require('../controllers/mda/plannerController');
 const planController = require('../controllers/mda/planController');
+const reportController = require('../controllers/mda/reportController');
 const settings = require('../controllers/mda/mdaSettingsController');
 const { protect, restrictTo } = require('../middleware/authMiddleWare.js');
 
@@ -73,4 +74,10 @@ router.delete('/settings/offices/:id', settings.deleteOffice);
 router.post('/settings/budget-sources/save', settings.saveBudgetSource);
 router.delete('/settings/budget-sources/:id', settings.deleteBudgetSource);
 
+router.get('/reports', reportController.getReportsLanding);
+router.get('/reports/start/:callId', reportController.startReport);
+router.get('/reports/edit/:id', reportController.getReportEditor); // We'll build this next
+router.post('/reports/save-progress', reportController.saveReportProgress);
+router.post('/reports/final-submit', reportController.submitFinalReport);
+router.get('/reports/view/:id', reportController.getReportEditor);
 module.exports = router;

@@ -1,0 +1,114 @@
+extends ./layout
+
+block npa_content
+  .container-fluid
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h3.fw-bold.text-dark Quarterly Snapshots
+        p.text-muted Manage the reporting windows for MDAs
+      button.btn.btn-primary.shadow-sm(data-bs-toggle="modal" data-bs-target="#createReportModal")
+        i.fas.fa-plus.me-2
+        | Create New Snapshot
+
+    //- Snapshots Table
+    .card.border-0.shadow-sm
+      .card-body.p-0
+        .table-responsive
+          table.table.table-hover.align-middle.mb-0
+            thead.bg-light
+              tr
+                th Master Plan
+                th FY / Quarter
+                th Status
+                th Deadline
+                th Actions
+            tbody
+              if reportCalls && reportCalls.length > 0
+                each call in reportCalls
+                  tr
+                    td
+                      if call.MasterPlan
+                        //- FIXED: Using 'fy' integer to show range
+                        span.fw-bold= `Plan ${call.MasterPlan.fy} / ${call.MasterPlan.fy + 5}`
+                      else
+                        span.text-muted N/A
+                    td
+                      .d-flex.flex-column
+                        //- FIXED: Shows "2025/2026" from stored "2025"
+                        span.fw-medium= `${call.reportingYear} / ${parseInt(call.reportingYear) + 1}`
+                        small.text-muted= call.quarter
+                    td
+                      if call.status === 'Draft'
+                        span.badge.bg-secondary Draft
+                      else if call.status === 'Open'
+                        span.badge.bg-success Open
+                      else
+                        span.badge.bg-danger Closed
+                    td
+                      span.small= new Date(call.deadline).toLocaleDateString('en-GB')
+                    td
+                      .btn-group.btn-group-sm
+                        //- 1. Publish (Only for Draft)
+                        if call.status === 'Draft'
+                          button.btn.btn-outline-success(onclick=`publishCall(${call.id})` title="Open for MDAs")
+                            i.fas.fa-paper-plane
+
+                        //- 2. Close (Only for Open)
+                        if call.status === 'Open'
+                          button.btn.btn-outline-warning(onclick=`closeCall(${call.id})` title="Close Window")
+                            i.fas.fa-lock
+
+                        //- 3. Re-open (Only for Closed)
+                        if call.status === 'Closed'
+                          button.btn.btn-outline-info(onclick=`reopenCall(${call.id})` title="Re-open Window")
+                            i.fas.fa-unlock
+                        
+                        //- 4. Delete (Always show, but only once!)
+                        button.btn.btn-outline-danger(onclick=`deleteCall(${call.id})` title="Delete Snapshot")
+                          i.fas.fa-trash
+
+              else
+                tr
+                  td.text-center.py-4(colspan="5") No snapshots created yet.
+
+    //- Create Snapshot Modal
+    .modal.fade#createReportModal(tabindex="-1")
+      .modal-dialog
+        .modal-content
+          .modal-header
+            h5.modal-title Setup New Reporting Window
+            button.btn-close(data-bs-dismiss="modal")
+          .modal-body
+            form#reportCallForm
+              .mb-3
+                label.form-label Master Plan
+                select.form-select(name="planCallId" required)
+                  option(value="") Select 5-Year Plan...
+                  if planCalls
+                    each plan in planCalls
+                      //- Convert to Number here too for the label
+                      option(value=plan.id)= `${plan.fy} / ${Number(plan.fy) + 5} Cycle`
+              .row
+                .col-md-6.mb-3
+                  label.form-label Fiscal Year
+                  //- Note: User can type 2025/2026, Controller will split it
+                  input.form-control(type="text" name="reportingYear" placeholder="e.g. 2025/2026" required)
+                .col-md-6.mb-3
+                  label.form-label Quarter
+                  select.form-select(name="quarter" required)
+                    option(value="Q1") Q1
+                    option(value="Q2") Q2
+                    option(value="Q3") Q3
+                    option(value="Q4") Q4
+              .mb-3
+                label.form-label Deadline
+                input.form-control(type="date" name="deadline" required)
+              .mb-3
+                label.form-label Instructions/Description
+                textarea.form-control(name="description" rows="2")
+          .modal-footer
+            button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
+            button.btn.btn-primary(onclick="saveReportCall()") Create Snapshot
+
+block scripts
+  script(src="/js/npa/report-calls.js")

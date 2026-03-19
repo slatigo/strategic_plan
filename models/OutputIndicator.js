@@ -10,19 +10,26 @@ module.exports = (sequelize, DataTypes) => {
         as: 'ParentOutput' 
       });
 
-      // Link to the MDA selections (SpOutputIndicator)
-      // This allows you to see which MDAs picked this specific indicator
+      // Link to the MDA selections
       this.hasMany(models.SpOutputIndicator, { 
         foreignKey: 'output_indicator_id', 
         as: 'Selections' 
+      });
+
+      // NEW: Link to the National Data (Using the indicator_code you just fixed)
+      this.hasOne(models.NationalAlignment, {
+        foreignKey: 'indicator_code',
+        sourceKey: 'indicatorCode',
+        as: 'NationalData'
       });
     }
   }
 
   OutputIndicator.init({
     indicatorCode: { 
-      type: DataTypes.STRING(30), 
-      field: 'indicator_code' 
+      type: DataTypes.STRING(255), // Changed from 30 to 255 to match DB
+      field: 'indicator_code',
+      unique: true 
     },
     outputId: { 
       type: DataTypes.INTEGER, 
@@ -32,10 +39,6 @@ module.exports = (sequelize, DataTypes) => {
     indicator: { 
       type: DataTypes.TEXT, 
       allowNull: false 
-    },
-    unitOfMeasure: { 
-      type: DataTypes.STRING(50), 
-      field: 'unit_of_measure' // Maps to the new DB column
     }
   }, {
     sequelize,

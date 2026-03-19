@@ -131,10 +131,15 @@ exports.getPlanEditor = async (req, res) => {
             order: [['objective_code', 'ASC']]
         });
 
-        // FY Year Calculation
+       // FY Year Calculation (Optimized for Integer fy)
         let years = [];
+
         if (plan.Call && plan.Call.fy) {
-            const startYear = parseInt(plan.Call.fy.split('/')[0]); 
+            // No more split('/') needed! 
+            // We ensure it's a number just in case, then loop.
+            const startYear = parseInt(plan.Call.fy); 
+            
+            // Generates [2025, 2026, 2027, 2028, 2029]
             years = Array.from({ length: 5 }, (_, i) => startYear + i);
         }
 

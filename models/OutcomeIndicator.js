@@ -3,28 +3,31 @@ const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class OutcomeIndicator extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
-    // models/OutcomeIndicator.js
-      static associate(models) {
-        if (models.Outcome) {
-          this.belongsTo(models.Outcome, { 
-            foreignKey: 'outcome_id', 
-            as: 'ParentOutcome' 
-          });
-        }
-
-        // Guard this because SpOutcomeIndicator loads at the end of the alphabet
-        if (models.SpOutcomeIndicator) {
-          this.hasMany(models.SpOutcomeIndicator, { 
-            foreignKey: 'outcome_indicator_id', 
-            as: 'Selections' 
-          });
-        }
+    static associate(models) {
+      if (models.Outcome) {
+        this.belongsTo(models.Outcome, { 
+          foreignKey: 'outcome_id', 
+          as: 'ParentOutcome' 
+        });
       }
+
+      if (models.SpOutcomeIndicator) {
+        this.hasMany(models.SpOutcomeIndicator, { 
+          foreignKey: 'outcome_indicator_id', 
+          as: 'Selections' 
+        });
+      }
+
+      // NEW: Link to National Data (Baselines & Units)
+      // This connects your high-level Outcomes to the decimal values
+      if (models.NationalAlignment) {
+        this.hasOne(models.NationalAlignment, {
+          foreignKey: 'indicator_code',
+          sourceKey: 'indicatorCode',
+          as: 'NationalData'
+        });
+      }
+    }
   }
 
   OutcomeIndicator.init({
@@ -35,7 +38,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     indicatorCode: {
-      type: DataTypes.STRING(30),
+      // UPDATED: Changed from 30 to 255 to match your SQL schema
+      type: DataTypes.STRING(255), 
       field: 'indicator_code',
       allowNull: true
     },
@@ -49,19 +53,15 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     indicator: {
-      type: DataTypes.STRING(255),
+      // Tip: Outcomes are often long sentences, TEXT might be safer than STRING(255)
+      type: DataTypes.TEXT, 
       allowNull: false
-    },
-    unitOfMeasure: {
-      type: DataTypes.STRING(50),
-      field: 'unit_of_measure',
-      allowNull: true
     }
   }, {
     sequelize,
-    modelName: 'OutcomeIndicator', // EXACTLY matching what SpOutcomeIndicator expects
+    modelName: 'OutcomeIndicator',
     tableName: 'outcome_indicators',
-    underscored: true, // Handles created_at and updated_at automatically
+    underscored: true,
   });
 
   return OutcomeIndicator;

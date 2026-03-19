@@ -4,11 +4,10 @@ block npa_content
   .d-flex.justify-content-between.align-items-center.mb-4
     div
       h2.fw-bold Strategic Plan Calls
-      p.text-muted Manage the windows for MDA planning submissions.
-    if calls && calls.length > 0
-      button.btn.btn-primary.px-4(onclick="openPlanCallModal()")
-        i.fas.fa-bullhorn.me-2
-        | Issue New Call
+      p.text-muted Manage the 5-year planning cycles.
+    button.btn.btn-primary(onclick="openPlanCallModal()")
+      i.fas.fa-bullhorn.me-2
+      | Issue New Call
 
   if calls && calls.length > 0
     .card.border-0.shadow-sm
@@ -17,7 +16,7 @@ block npa_content
           table.table.table-hover.align-middle.mb-0
             thead.table-light
               tr
-                th.px-4 Fiscal Year
+                th.px-4 Plan Cycle (FY)
                 th Description
                 th Deadline
                 th Status
@@ -25,62 +24,45 @@ block npa_content
             tbody
               each call in calls
                 tr
-                  td.px-4.fw-bold= call.fy
-                  td.text-truncate(style="max-width: 300px;")= call.description
+                  td.px-4.fw-bold= `${call.fy} / ${Number(call.fy) + 5}`
+                  td.text-truncate(style="max-width: 250px;")= call.description
                   td
                     - const isOverdue = new Date(call.deadline) < new Date() && call.status === 'Open'
-                    span(class=isOverdue ? 'text-danger fw-bold' : '')
-                      i.fas.fa-calendar-day.me-2
-                      | #{call.deadline}
+                    span(class=isOverdue ? 'text-danger fw-bold' : '') #{call.deadline}
                   td
                     span.badge.rounded-pill(class=call.status === 'Open' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary')= call.status
                   td.text-end.px-4
-                    //- Edit Button
-                    button.btn.btn-sm.btn-outline-primary(onclick=`openPlanCallModal(${JSON.stringify(call)})` title="Edit")
+                    button.btn.btn-sm.btn-outline-primary.me-1(onclick=`openPlanCallModal(${JSON.stringify(call)})`)
                       i.fas.fa-edit
-                    
-                    //- Toggle Status Button
-                    button.btn.btn-sm(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' 
-                      onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')` title=call.status === 'Open' ? 'Close' : 'Open')
+                    button.btn.btn-sm.me-1(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')`)
                       i.fas(class=call.status === 'Open' ? 'fa-lock' : 'fa-lock-open')
-
-                    //- Delete Button
-                    button.btn.btn-sm.btn-outline-danger(onclick=`deletePlanCall(${call.id}, '${call.fy}')` title="Delete")
+                    button.btn.btn-sm.btn-outline-danger(onclick=`deletePlanCall(${call.id}, '${call.fy}/${call.fy + 5}')`)
                       i.fas.fa-trash-alt
-                    
   else
-    //- Empty State when there are no calls
-    .card.border-0.shadow-sm.py-5
-      .card-body.text-center
-        .mb-4
-          i.fas.fa-bullhorn.fa-4x.text-light
-        h4.fw-bold No Planning Calls Found
-        p.text-muted There are currently no active or past calls for strategic plans.
-        button.btn.btn-primary.btn-lg.px-5(onclick="openPlanCallModal()")
-          | Issue the First Call
+    .text-center.py-5
+      h4 No Planning Calls Found.
 
-  //- Modal remains the same
+  // Modal
   .modal.fade#planCallModal(tabindex="-1")
     .modal-dialog
       .modal-content
         .modal-header
           h5.modal-title Issue New Plan Call
-          button.btn-close(type="button" data-bs-dismiss="modal")
+          button.btn-close(data-bs-dismiss="modal")
         .modal-body
           form#planCallForm
             .mb-3
-              label.form-label.fw-bold Fiscal Year
-              input.form-control(type="text" name="fy" placeholder="e.g. 2026/2027" required)
+              label.form-label.fw-bold Strategic Plan Cycle
+              input.form-control(type="text" name="fy" placeholder="e.g. 2025/2030" required)
             .mb-3
-              label.form-label.fw-bold Submission Deadline
+              label.form-label.fw-bold Deadline
               input.form-control(type="date" name="deadline" required)
             .mb-3
-              label.form-label.fw-bold Instructions/Description
-              textarea.form-control(name="description" rows="3" placeholder="Brief instructions for MDAs...")
+              label.form-label.fw-bold Description
+              textarea.form-control(name="description" rows="3")
         .modal-footer
-          button.btn.btn-light(type="button" data-bs-dismiss="modal") Cancel
-          button.btn.btn-primary#saveCallBtn(onclick="savePlanCall()") Issue Call
-
+          button.btn.btn-light(data-bs-dismiss="modal") Cancel
+          button.btn.btn-primary(onclick="savePlanCall()") Save Call
 block scripts
-  //- Link the external JS file here
+  //- The '/' at the start refers to the 'public' folder defined in your app.js
   script(src="/js/npa/plan-call-management.js")
