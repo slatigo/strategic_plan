@@ -27,7 +27,7 @@ async function submitNewPlan() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
 
-        const response = await fetch('/mda/api/plans/start', {
+        const response = await fetch('/mda/plans/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

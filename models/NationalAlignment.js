@@ -4,32 +4,34 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class NationalAlignment extends Model {
     static associate(models) {
-      // 1. One baseline has many yearly target values
-      // We use 'indicator_code' (snake_case) because that is the JS property in NationalValue.js
+      /**
+       * 1. One baseline has many yearly target values.
+       * We use 'indicator_code' as the foreignKey (the column in national_values)
+       * and 'indicatorCode' as the sourceKey (the property in THIS model).
+       */
       this.hasMany(models.NationalValue, {
         foreignKey: 'indicator_code',
-        sourceKey: 'indicator_code',
+        sourceKey: 'indicatorCode',
         as: 'YearlyValues'
       });
 
       // 2. Link to Output Indicators
-      // targetKey MUST be 'indicatorCode' because that is the name in OutputIndicator.js
       this.belongsTo(models.OutputIndicator, {
-        foreignKey: 'indicator_code',
+        foreignKey: 'indicatorCode',
         targetKey: 'indicatorCode',
         as: 'OutputInfo'
       });
 
       // 3. Link to Intermediate Outcome Indicators
       this.belongsTo(models.IntermediateOutcomeIndicator, {
-        foreignKey: 'indicator_code',
+        foreignKey: 'indicatorCode',
         targetKey: 'indicatorCode',
         as: 'IntermediateInfo'
       });
 
       // 4. Link to Outcome Indicators
       this.belongsTo(models.OutcomeIndicator, {
-        foreignKey: 'indicator_code',
+        foreignKey: 'indicatorCode',
         targetKey: 'indicatorCode',
         as: 'OutcomeInfo'
       });
@@ -37,15 +39,20 @@ module.exports = (sequelize, DataTypes) => {
   }
 
   NationalAlignment.init({
-    // Note: We use indicator_code as the JS property name to match your primaryKey style
-    indicator_code: {
+    /**
+     * We rename the JS property to indicatorCode (camelCase).
+     * The 'field' property ensures it still talks to the 'indicator_code' 
+     * column in your SQL database.
+     */
+    indicatorCode: {
       type: DataTypes.STRING(255),
       primaryKey: true,
       allowNull: false,
-      comment: 'Unique code identifying the indicator'
+      field: 'indicator_code', 
+      comment: 'Unique code identifying the indicator',
+      unique: true
     },
     baseline_value: {
-      // Correctly matches your new DECIMAL(20,2) SQL structure
       type: DataTypes.DECIMAL(20, 2),
       allowNull: true,
       defaultValue: null,
@@ -62,6 +69,11 @@ module.exports = (sequelize, DataTypes) => {
     remarks: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    polarity: {
+      type: DataTypes.ENUM('Incr', 'Decr', 'Maintain'),
+      allowNull: false,
+      defaultValue: 'Incr'
     }
   }, {
     sequelize,

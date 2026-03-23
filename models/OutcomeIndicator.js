@@ -18,13 +18,12 @@ module.exports = (sequelize, DataTypes) => {
         });
       }
 
-      // NEW: Link to National Data (Baselines & Units)
-      // This connects your high-level Outcomes to the decimal values
+      // UPDATED: Link to National Data using the Unique Alias
       if (models.NationalAlignment) {
         this.hasOne(models.NationalAlignment, {
           foreignKey: 'indicator_code',
           sourceKey: 'indicatorCode',
-          as: 'NationalData'
+          as: 'OutcomeNational' // <--- CHANGED THIS from 'NationalData'
         });
       }
     }
@@ -38,7 +37,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     indicatorCode: {
-      // UPDATED: Changed from 30 to 255 to match your SQL schema
       type: DataTypes.STRING(255), 
       field: 'indicator_code',
       allowNull: true
@@ -53,7 +51,6 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     indicator: {
-      // Tip: Outcomes are often long sentences, TEXT might be safer than STRING(255)
       type: DataTypes.TEXT, 
       allowNull: false
     }

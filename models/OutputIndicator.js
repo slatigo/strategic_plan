@@ -16,18 +16,19 @@ module.exports = (sequelize, DataTypes) => {
         as: 'Selections' 
       });
 
-      // NEW: Link to the National Data (Using the indicator_code you just fixed)
+      // UPDATED: Link to the National Data using the Unique Alias
+      // This matches the 'OutputNational' used in the Controller
       this.hasOne(models.NationalAlignment, {
         foreignKey: 'indicator_code',
         sourceKey: 'indicatorCode',
-        as: 'NationalData'
+        as: 'OutputNational' // <--- CHANGED THIS from 'NationalData'
       });
     }
   }
 
   OutputIndicator.init({
     indicatorCode: { 
-      type: DataTypes.STRING(255), // Changed from 30 to 255 to match DB
+      type: DataTypes.STRING(255), 
       field: 'indicator_code',
       unique: true 
     },

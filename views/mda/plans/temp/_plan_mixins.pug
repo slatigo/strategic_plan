@@ -1,0 +1,104 @@
+//- views/mda/mixins/_plan_mixins.pug
+
+mixin indicatorRow(item, level, years, isLocked)
+  - let lib = item.LibraryIndicator || item.LibraryIntermediateIndicator || item.LibraryOutputIndicator
+  
+  //- 1. Resolve National Data (Aliases from Controller)
+  - let natInfo = null
+  if lib
+    - natInfo = lib.OutcomeNational || lib.IntermediateNational || lib.OutputNational
+  
+  //- 2. Resolve Unit from NationalAlignment
+  - let rawUnit = natInfo ? (natInfo.unit_of_measure || natInfo.unitOfMeasure || '') : ''
+  - let unitStr = rawUnit.toString().toLowerCase()
+  - let isPercent = unitStr.includes('percent') || unitStr.includes('%')
+  - let isCurrency = unitStr.includes('ugx') || unitStr.includes('shilling')
+
+  .indicator-item.bg-white.p-2.border.rounded.mb-2.shadow-none(class=isLocked ? 'read-only-row' : '')
+    .row.align-items-center
+      .col-md-5
+        .d-flex.justify-content-between.align-items-start
+          div
+            //- Resolve Adaptation Key
+            - const adaptedKey = level === 'Intermediate' ? 'adaptedIntermediateOutcomeIndicator' : `adapted${level}Indicator`
+            - let adaptedText = item[adaptedKey]
+            
+            //- 3. Display Code, Source & Unit Badge
+            .mb-1
+              span.badge.bg-secondary.x-small.me-1= lib ? (lib.indicatorCode || lib.indicator_code) : 'N/A'
+              
+              if item.dataSource
+                span.text-muted.x-small.me-2(title="Data Source")
+                  i.fas.fa-database.ms-1.me-1
+                  | #{item.dataSource}
+              
+              if rawUnit
+                span.badge.bg-light.text-primary.border.x-small
+                  i.fas.fa-ruler.me-1
+                  | #{rawUnit}
+            
+            //- 4. Display Text (Adapted vs Library)
+            if adaptedText && adaptedText !== '0' && adaptedText !== ''
+              p.mb-0.x-small.text-wrap.text-primary.fw-bold
+                i.fas.fa-pen-nib.me-1.small
+                | #{adaptedText}
+            else
+              p.mb-0.x-small.text-wrap= lib ? (lib.indicator || lib.indicatorName) : 'N/A'
+            
+            //- 5. Responsible Office
+            if item.ResponsibleOffice
+              .mt-1
+                span.text-info.x-small.fw-bold
+                  i.fas.fa-building.me-1
+                  | #{item.ResponsibleOffice.name}
+          
+          //- 6. CONDITIONAL ACTION BUTTONS
+          if !isLocked
+            .btn-group.ms-2
+              button.btn.btn-link.btn-xs.text-primary.p-0(onclick=`editIndicator('${level}', ${item.id})` title="Edit")
+                i.fas.fa-edit
+              button.btn.btn-link.btn-xs.text-danger.p-0.ms-2(onclick=`removeIndicator('${level}', ${item.id})` title="Delete")
+                i.fas.fa-trash-alt
+          else
+            span.badge.bg-light.text-muted.x-small.ms-2
+              i.fas.fa-lock
+              
+      .col-md-7
+        .row.g-0.text-center
+          //- Baseline Column
+          .col.border-end
+            small.d-block.text-muted.x-small Base
+            span.badge.bg-light.text-dark.border.x-small
+              - let bVal = (natInfo && natInfo.baseline_value) ? natInfo.baseline_value : item.baselineValue
+              if bVal
+                if isPercent
+                  | #{bVal}%
+                else if isCurrency
+                  | #{Number(bVal).toLocaleString()}
+                else
+                  | #{bVal}
+              else
+                | 0
+          
+          //- Yearly Targets Loop
+          each year in years
+            - let target = item.Targets ? item.Targets.find(t => t.fy == year) : null
+            - let natTarget = (natInfo && natInfo.YearlyValues) ? natInfo.YearlyValues.find(nv => nv.target_year == year) : null
+            
+            .col
+              small.d-block.text-muted.x-small #{year}
+              span.fw-bold.x-small(class=isLocked ? 'text-dark' : 'text-primary')
+                if target && target.val !== null
+                  if isPercent
+                    | #{target.val}%
+                  else if isCurrency
+                    | #{Number(target.val).toLocaleString()}
+                  else
+                    | #{target.val}
+                else
+                  | -
+              
+              if natTarget
+                div.x-small.text-danger.fw-bold(style="font-size: 0.65rem;" title="National Alignment Target")
+                  - let nVal = natTarget.value
+                  | Nat: #{isPercent ? nVal + '%' : (isCurrency ? Number(nVal).toLocaleString() : nVal)}

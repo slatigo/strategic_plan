@@ -1,0 +1,30 @@
+//- views/partials/_grid_tables/_action_expenditure_table.pug
+.table-responsive.mt-2.ms-3
+  table.table.table-sm.table-hover.border.mb-0
+    thead.bg-light: tr
+      th.x-small.text-muted ACTION / ACTIVITY
+      th.x-small.text-muted.text-center Budget (#{reportingFY})
+      th.x-small.text-muted.text-center(style="width: 180px") SPEND (UGX)
+      th.x-small.text-muted REMARKS
+    tbody
+      each act in (outp.SelectedActions || [])
+        if act
+          - const aEntry = (report.ActionEntries || []).find(e => e.spOutputActionId === act.id)
+          - const libAct = act.LibraryAction || {}
+          - const budgetObj = (act.Budgets || []).find(b => b.fy === reportingFY)
+          tr
+            td.py-2
+              span.text-muted.x-small.fw-bold.me-1 [#{libAct.actionCode || 'ACT'}]
+              span.small.fw-bold #{act.adaptedOutputAction || libAct.action || 'Action'}
+            td.text-center.small.fw-bold.text-secondary
+              | #{budgetObj && budgetObj.val ? Number(budgetObj.val).toLocaleString() : '0'}
+            td
+              input.form-control.form-control-sm.text-end.number-separator(
+                type="text" 
+                name=`actions[${act.id}][spend]` 
+                value=(aEntry && aEntry.actualExpenditure != null ? aEntry.actualExpenditure.toLocaleString() : '')
+                oninput="formatNumber(this)"
+                readonly=isLocked
+              )
+              input(type="hidden" name=`actions[${act.id}][id]` value=act.id)
+            td: input.form-control.form-control-sm(type="text" name=`actions[${act.id}][rem]` value=(aEntry ? aEntry.remarks : '') readonly=isLocked)

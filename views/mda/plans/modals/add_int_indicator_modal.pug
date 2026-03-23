@@ -1,0 +1,81 @@
+#intermediateIndicatorModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-xl
+    .modal-content
+      .modal-header.bg-info.text-white
+        h5.modal-title 
+          i.fas.fa-layer-group.me-2
+          | Link Intermediate Indicator & Set Targets
+        button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
+      .modal-body
+        form#intIndicatorForm(action="/mda/plans/indicators/save" method="POST")
+          input#modal_intermediate_parent_id(type="hidden" name="spIntermediateOutcomeId")
+          input(type="hidden" name="id") 
+          
+          .row
+            .col-md-12.mb-3
+              label.form-label.fw-bold Select Indicator from Library
+              .input-group
+                select#intermediate_indicator_select.form-select(name="intermediateOutcomeIndicatorId" required)
+                  option(value="") -- Select from Library --
+                //- JS updates this badge
+                span#int_unit_badge.input-group-text.bg-light.text-muted.small Unit: ---
+            
+            .col-md-12.mb-3
+              .form-check.form-switch.mb-2
+                input#int_adapt_toggle.form-check-input.adapt-toggle(type="checkbox" name="is_adapted" role="switch" data-target-container="int_adaptation_container")
+                label.form-check-label.fw-bold(for="int_adapt_toggle") Adapt this indicator name?
+              #int_adaptation_container(style="display: none;")
+                label.form-label.text-info.small Customized Intermediate Indicator Name
+                textarea#int_adapted_name.form-control(name="adaptedIntermediateOutcomeIndicator" rows="2" placeholder="Modify name for institutional context...")
+
+            .col-md-4.mb-3
+              label.form-label.fw-bold Responsible Office
+              select.form-select(name="responsibleOfficeId" required)
+                option(value="") -- Select Office --
+                //- NATIVE JS LOOP to prevent parse errors
+                - if (offices && offices.length > 0)
+                  - for (var i = 0; i < offices.length; i++)
+                    option(value=offices[i].id) #{offices[i].name}
+
+            .col-md-4.mb-3
+              label.form-label.fw-bold Baseline Value
+              .input-group
+                input#intermediate_baseline_input.form-control(type="text" name="baselineValue" placeholder="Wait for selection...")
+                span.input-group-text.unit-append.bg-light.small ---
+            
+            .col-md-4.mb-3
+              label.form-label.fw-bold Data Source
+              input.form-control(type="text" name="dataSource" placeholder="e.g. Survey, Department Records")
+          
+          hr
+          
+          .d-flex.justify-content-between.align-items-center.mb-3
+            h6.fw-bold.mb-0 
+              i.fas.fa-bullseye.me-2.text-info
+              | Annual Targets (Intermediate)
+            span.badge.bg-light.text-info.border.px-3.small
+              i.fas.fa-info-circle.me-1
+              | Blue values are NDP Benchmarks
+
+          //- 1. NATIONAL REFERENCE ROW (NDP Targets)
+          .row.bg-light.rounded.p-3.mb-3.border.mx-0.g-2
+            //- Hardcoded range to prevent "years is not defined" error
+            - for (var k = 2025; k <= 2029; k++)
+              .col.text-center
+                label.x-small.text-uppercase.text-muted.d-block NDP #{k}
+                div.fw-bold.small.text-info(id=`int_nat_val_${k}`) --
+          
+          //- 2. MDA INPUT ROW (Target entry fields)
+          .row.g-2
+            - for (var l = 2025; l <= 2029; l++)
+              .col
+                label.small.form-label.fw-bold #{l}
+                .input-group.input-group-sm
+                  input.form-control(type="text" name=`targets[${l}]` placeholder="0.00")
+                  span.input-group-text.unit-append.x-small ---
+                
+      .modal-footer.bg-light
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+        button.btn.btn-info.text-white.px-4(type="submit" form="intIndicatorForm") 
+          i.fas.fa-save.me-2
+          | Save Indicator

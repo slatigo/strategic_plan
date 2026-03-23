@@ -5,110 +5,161 @@ block npa_content
     .d-flex.justify-content-between.align-items-center.mb-4
       div
         h3.fw-bold.text-dark Quarterly Snapshots
-        p.text-muted Manage the reporting windows for MDAs
+        p.text-muted Manage the reporting windows and monitor MDA compliance rates.
       button.btn.btn-primary.shadow-sm(data-bs-toggle="modal" data-bs-target="#createReportModal")
         i.fas.fa-plus.me-2
         | Create New Snapshot
 
+    //- Quick Stats Row
+    .row.g-3.mb-4
+      .col-md-4
+        .card.border-0.shadow-sm
+          .card-body
+            h6.small.text-uppercase.text-muted Active Snapshots
+            - const activeCount = reportCalls ? reportCalls.filter(c => c.status === 'Open').length : 0
+            h4.fw-bold.mb-0= activeCount
+      .col-md-4
+        .card.border-0.shadow-sm
+          .card-body
+            h6.small.text-uppercase.text-muted Total MDAs Expected
+            h4.fw-bold.mb-0= totalMdas || 180
+      .col-md-4
+        .card.border-0.shadow-sm
+          .card-body
+            h6.small.text-uppercase.text-muted Latest Response Rate
+            if reportCalls && reportCalls.length > 0
+              - const latest = reportCalls
+              - const s = parseInt(latest.countSubmitted || (latest.dataValues && latest.dataValues.countSubmitted)) || 0
+              - const a = parseInt(latest.countApproved || (latest.dataValues && latest.dataValues.countApproved)) || 0
+              - const submitted = s + a
+              h4.fw-bold.mb-0.text-primary #{Math.round((submitted / totalMdas) * 100) || 0}%
+            else
+              h4.fw-bold.mb-0 0%
+
     //- Snapshots Table
-    .card.border-0.shadow-sm
+    .card.border-0.shadow-sm.rounded-4
       .card-body.p-0
         .table-responsive
           table.table.table-hover.align-middle.mb-0
             thead.bg-light
               tr
-                th Master Plan
-                th FY / Quarter
+                th.px-4 Master Plan
+                th Reporting Period
+                th.text-center Submissions
                 th Status
                 th Deadline
-                th Actions
+                th.text-end.px-4 Actions
             tbody
               if reportCalls && reportCalls.length > 0
                 each call in reportCalls
                   tr
-                    td
+                    td.px-4
                       if call.MasterPlan
-                        //- FIXED: Using 'fy' integer to show range
-                        span.fw-bold= `Plan ${call.MasterPlan.fy} / ${call.MasterPlan.fy + 5}`
+                        span.fw-bold.text-primary= `Plan ${call.MasterPlan.fy} / ${parseInt(call.MasterPlan.fy) + 5}`
                       else
-                        span.text-muted N/A
+                        span.text-muted No Linked Plan
+                    
                     td
                       .d-flex.flex-column
-                        //- FIXED: Shows "2025/2026" from stored "2025"
-                        span.fw-medium= `${call.reportingYear} / ${parseInt(call.reportingYear) + 1}`
-                        small.text-muted= call.quarter
+                        span.fw-bold= `FY ${call.reportingYear} / ${parseInt(call.reportingYear) + 1}`
+                        span.badge.bg-info-subtle.text-info.align-self-start.mt-1= call.quarter
+                    
+                    td.text-center
+                      - const s = parseInt(call.countSubmitted || (call.dataValues && call.dataValues.countSubmitted)) || 0
+                      - const a = parseInt(call.countApproved || (call.dataValues && call.dataValues.countApproved)) || 0
+                      - const r = parseInt(call.countRevision || (call.dataValues && call.dataValues.countRevision)) || 0
+                      .d-flex.flex-column.align-items-center
+                        .d-flex.gap-1.mb-1
+                          span.badge.bg-warning.text-dark(title="Submitted")= s
+                          span.badge.bg-success(title="Approved")= a
+                          span.badge.bg-danger(title="Needs Revision")= r
+                        - const totalDone = s + a
+                        - const progress = Math.round((totalDone / totalMdas) * 100) || 0
+                        .progress(style="height: 4px; width: 80px;")
+                          .progress-bar(class=progress < 50 ? 'bg-warning' : 'bg-success' style=`width: ${progress}%`)
+
                     td
                       if call.status === 'Draft'
-                        span.badge.bg-secondary Draft
+                        span.badge.rounded-pill.bg-secondary-subtle.text-secondary Draft
                       else if call.status === 'Open'
-                        span.badge.bg-success Open
+                        span.badge.rounded-pill.bg-success-subtle.text-success Open
                       else
-                        span.badge.bg-danger Closed
+                        span.badge.rounded-pill.bg-danger-subtle.text-danger Closed
+                    
                     td
-                      span.small= new Date(call.deadline).toLocaleDateString('en-GB')
-                    td
+                      - const isOverdue = new Date(call.deadline) < new Date() && call.status === 'Open'
+                      span.small(class=isOverdue ? 'text-danger fw-bold' : '')
+                        i.far.fa-calendar-alt.me-1
+                        | #{new Date(call.deadline).toLocaleDateString('en-GB')}
+                    
+                    td.text-end.px-4
                       .btn-group.btn-group-sm
-                        //- 1. Publish (Only for Draft)
-                        if call.status === 'Draft'
-                          button.btn.btn-outline-success(onclick=`publishCall(${call.id})` title="Open for MDAs")
-                            i.fas.fa-paper-plane
+                        //- 1. Compliance/Submissions List (The "Who reported?" view)
+                        a.btn.btn-outline-primary(href=`/npa/report-calls/${call.id}/submissions` title="View Submissions List")
+                          i.fas.fa-list-ul
+                        
+                        //- 2. NEW: National Analysis (The "How are we doing?" view)
+                        a.btn.btn-primary(href=`/npa/report-calls/${call.id}/analysis` title="Global Performance Analysis")
+                          i.fas.fa-chart-line.me-1
+                          | Analysis
 
-                        //- 2. Close (Only for Open)
+                        //- 3. Lifecycle Actions
+                        if call.status === 'Draft'
+                          button.btn.btn-outline-success(onclick=`publishCall(${call.id})` title="Publish Call")
+                            i.fas.fa-paper-plane
+                        
                         if call.status === 'Open'
                           button.btn.btn-outline-warning(onclick=`closeCall(${call.id})` title="Close Window")
                             i.fas.fa-lock
-
-                        //- 3. Re-open (Only for Closed)
-                        if call.status === 'Closed'
-                          button.btn.btn-outline-info(onclick=`reopenCall(${call.id})` title="Re-open Window")
-                            i.fas.fa-unlock
-                        
-                        //- 4. Delete (Always show, but only once!)
-                        button.btn.btn-outline-danger(onclick=`deleteCall(${call.id})` title="Delete Snapshot")
-                          i.fas.fa-trash
+                            
+                        button.btn.btn-outline-danger(onclick=`deleteCall(${call.id}, '${call.reportingYear} ${call.quarter}')` title="Delete")
+                          i.fas.fa-trash-alt
 
               else
                 tr
-                  td.text-center.py-4(colspan="5") No snapshots created yet.
+                  td.text-center.py-5(colspan="6")
+                    h5.text-muted No Reporting Windows Found
 
     //- Create Snapshot Modal
-    .modal.fade#createReportModal(tabindex="-1")
-      .modal-dialog
-        .modal-content
-          .modal-header
-            h5.modal-title Setup New Reporting Window
+    .modal.fade#createReportModal(tabindex="-1" aria-hidden="true")
+      .modal-dialog.modal-dialog-centered
+        .modal-content.border-0.shadow
+          .modal-header.bg-light
+            h5.modal-title.fw-bold Setup New Reporting Window
             button.btn-close(data-bs-dismiss="modal")
-          .modal-body
+          .modal-body.p-4
             form#reportCallForm
               .mb-3
-                label.form-label Master Plan
+                label.form-label.fw-bold Master Plan Cycle
                 select.form-select(name="planCallId" required)
                   option(value="") Select 5-Year Plan...
                   if planCalls
                     each plan in planCalls
-                      //- Convert to Number here too for the label
-                      option(value=plan.id)= `${plan.fy} / ${Number(plan.fy) + 5} Cycle`
+                      option(value=plan.id)= `${plan.fy} / ${parseInt(plan.fy) + 5} Strategic Plan`
+              
               .row
                 .col-md-6.mb-3
-                  label.form-label Fiscal Year
-                  //- Note: User can type 2025/2026, Controller will split it
-                  input.form-control(type="text" name="reportingYear" placeholder="e.g. 2025/2026" required)
+                  label.form-label.fw-bold Fiscal Year
+                  input.form-control(type="text" name="reportingYear" placeholder="e.g. 2025" required)
                 .col-md-6.mb-3
-                  label.form-label Quarter
+                  label.form-label.fw-bold Quarter
                   select.form-select(name="quarter" required)
-                    option(value="Q1") Q1
-                    option(value="Q2") Q2
-                    option(value="Q3") Q3
-                    option(value="Q4") Q4
+                    option(value="Q1") Quarter 1
+                    option(value="Q2") Quarter 2
+                    option(value="Q3") Quarter 3
+                    option(value="Q4") Quarter 4
+              
               .mb-3
-                label.form-label Deadline
+                label.form-label.fw-bold Submission Deadline
                 input.form-control(type="date" name="deadline" required)
-              .mb-3
-                label.form-label Instructions/Description
-                textarea.form-control(name="description" rows="2")
-          .modal-footer
+              
+              .mb-0
+                label.form-label.fw-bold Instructions
+                textarea.form-control(name="description" rows="3")
+
+          .modal-footer.bg-light.border-0
             button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
-            button.btn.btn-primary(onclick="saveReportCall()") Create Snapshot
+            button.btn.btn-primary.px-4(type="button" onclick="saveReportCall()") Create Snapshot
 
 block scripts
   script(src="/js/npa/report-calls.js")

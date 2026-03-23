@@ -1,0 +1,45 @@
+extends ../layout
+
+block mda_content
+  .container-fluid.py-4
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h2.fw-bold Strategic Plans
+        p.text-muted Manage your MDA's multi-year strategic framework.
+      
+      if openCalls.length > 0
+        button.btn.btn-primary(data-bs-toggle="modal" data-bs-target="#newPlanModal")
+          i.fas.fa-plus.me-2
+          | Start New Plan
+    
+    .row
+      if plans.length > 0
+        each plan in plans
+          .col-md-6.col-lg-4.mb-4
+            .card.h-100.shadow-sm
+              .card-body
+                .d-flex.justify-content-between.mb-2
+                  span.badge.bg-dark FY #{plan.Call.reportingYear}
+                  - const statusClass = plan.status === 'Approved' ? 'bg-success' : (plan.status === 'Submitted' ? 'bg-info' : 'bg-warning')
+                  span(class=`badge ${statusClass}`) #{plan.status}
+                
+                h5.card-title.fw-bold.mb-1 #{plan.Programme ? plan.Programme.programmeName : 'Unassigned Programme'}
+                p.text-muted.small Objective: #{plan.SelectedObjectives ? plan.SelectedObjectives.length : 0} Selected
+                
+                hr
+                
+                .d-grid.gap-2
+                  if plan.status === 'Draft' || plan.status === 'Pending Correction'
+                    a.btn.btn-outline-primary.btn-sm(href=`/mda/plans/${plan.id}/edit`)
+                      i.fas.fa-edit.me-2
+                      | Edit Framework
+                  else
+                    a.btn.btn-outline-secondary.btn-sm(href=`/mda/plans/view/${plan.id}`)
+                      i.fas.fa-eye.me-2
+                      | View Plan
+      else
+        .col-12
+          .alert.alert-light.text-center.py-5.border.dashed
+            i.fas.fa-folder-open.fa-3x.text-muted.mb-3
+            h5 No plans found.
+            p.text-muted Start by selecting an open Call for the next Fiscal Year.

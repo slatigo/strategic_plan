@@ -4,10 +4,16 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class PlanCall extends Model {
     static associate(models) {
-      // Inverse relationship
+      // A PlanCall has many StrategicPlans
+      this.hasMany(models.StrategicPlan, { 
+        foreignKey: 'callId', // Change this from 'plan_call_id'
+        as: 'Plans' 
+      });
+
+      // A PlanCall also has many ReportCalls (Quarterly windows)
       this.hasMany(models.ReportCall, { 
         foreignKey: 'plan_call_id', 
-        as: 'Reports' 
+        as: 'ReportWindows' 
       });
     }
   }

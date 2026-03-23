@@ -17,4 +17,13 @@ router.post('/api/logout', (req, res) => {
     res.status(200).json({ success: true, message: "Logged out" });
 });
 
+// Add this to your auth routes file
+router.get('/logout', (req, res) => {
+    // 1. Clear the session or JWT cookie
+    res.clearCookie('token'); // Replace 'token' with your actual cookie name
+    
+    // 2. Redirect the user to the login page
+    res.redirect('/login');
+});
+
 module.exports = router;

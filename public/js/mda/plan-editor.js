@@ -306,18 +306,57 @@ async function prepareOutputModal(spInterventionId) {
     } catch (e) { console.error(e); }
 }
 
+/**
+ * Formats a number with commas for UGX display
+ */
+const formatUGX = (val) => {
+    const num = parseFloat(String(val).replace(/,/g, ''));
+    return isNaN(num) ? "" : num.toLocaleString('en-US');
+};
+
+/**
+ * Updates the cumulative total display in the modal
+ */
+const updateActionTotal = () => {
+    let total = 0;
+    document.querySelectorAll('#actionForm input[data-type="currency"]').forEach(input => {
+        const val = parseFloat(input.value.replace(/,/g, '')) || 0;
+        total += val;
+    });
+    const display = document.getElementById('action_total_display');
+    if (display) display.textContent = total.toLocaleString('en-US');
+};
+
+// --- UTILITIES ---
+const formatCurrency = (val) => {
+    const num = parseFloat(String(val).replace(/,/g, ''));
+    return isNaN(num) ? "" : num.toLocaleString('en-US');
+};
+
+const updateActionGrandTotal = () => {
+    let total = 0;
+    document.querySelectorAll('#actionForm input[data-type="currency"]').forEach(input => {
+        total += parseFloat(input.value.replace(/,/g, '')) || 0;
+    });
+    const display = document.getElementById('action_total_display');
+    if (display) display.textContent = total.toLocaleString('en-US');
+};
+
+// --- MODAL PREPARATION ---
 async function prepareActionModal(spOutputId, existingData = null) {
     const modalEl = document.getElementById('actionModal');
     const form = document.getElementById('actionForm');
     const select = document.getElementById('action_select');
     
-    // 1. Reset Form & Set Parent ID
     form.reset();
     document.getElementById('modal_action_output_id').value = spOutputId;
+    document.getElementById('action_total_display').textContent = '0';
+    
+    // Clear dynamic inputs
+    form.querySelectorAll('input[name^="budgets["]').forEach(i => i.value = '');
     select.innerHTML = '<option>Loading...</option>';
 
     try {
-        // 2. Fetch National Actions for the dropdown
         const res = await fetch(`/mda/api/library/actions-by-output/${spOutputId}`);
         const actions = await res.json();
         
@@ -326,52 +365,48 @@ async function prepareActionModal(spOutputId, existingData = null) {
             select.appendChild(new Option(`${a.actionCode || ''} ${a.action}`, a.id));
         });
 
-        // 3. Populate Data if in EDIT MODE
         if (existingData) {
-            form.querySelector('[name="id"]').value = existingData.id;
-            form.querySelector('[name="outputActionId"]').value = existingData.outputActionId;
+            form.querySelector('[name="id"]').value = existingData.id || '';
+            select.value = existingData.outputActionId || '';
             
-            // Handle Adaptation Toggle
+            if (existingData.responsibleOfficeId) 
+                form.querySelector('[name="responsibleOfficeId"]').value = existingData.responsibleOfficeId;
+            if (existingData.budgetSourceId) 
+                form.querySelector('[name="budgetSourceId"]').value = existingData.budgetSourceId;
+
+            // Adaptation Toggle
             const adaptToggle = document.getElementById('action_adapt_toggle');
             const adaptContainer = document.getElementById('action_adaptation_container');
-            
             if (existingData.adaptedOutputAction) {
                 adaptToggle.checked = true;
                 adaptContainer.style.display = 'block';
                 form.querySelector('[name="adaptedOutputAction"]').value = existingData.adaptedOutputAction;
-            } else {
-                adaptToggle.checked = false;
-                adaptContainer.style.display = 'none';
             }
 
-            // NEW: Set the Office and Budget Source Dropdowns
-            if (existingData.responsibleOfficeId) {
-                form.querySelector('[name="responsibleOfficeId"]').value = existingData.responsibleOfficeId;
-            }
-            if (existingData.budgetSourceId) {
-                form.querySelector('[name="budgetSourceId"]').value = existingData.budgetSourceId;
-            }
-
-            // Populate Budgets
+            // Populate Budgets with formatting
             if (existingData.Budgets) {
                 existingData.Budgets.forEach(b => {
-                    const budgetInput = form.querySelector(`[name="budgets[${b.fy}]"]`);
-                    if (budgetInput) budgetInput.value = b.val;
+                    const input = form.querySelector(`[name="budgets[${b.fy}]"]`);
+                    if (input) input.value = formatCurrency(b.val);
                 });
+                updateActionGrandTotal();
             }
         }
-
-        // 4. Show the Modal
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    } catch (e) { 
-        console.error("Error preparing action modal:", e); 
-        alert("Failed to load actions. Please try again.");
-    }
+    } catch (e) { alert("Error loading data"); }
 }
 
+// --- LIVE INTERACTION ---
+document.addEventListener('input', (e) => {
+    if (e.target.matches('#actionForm input[data-type="currency"]')) {
+        e.target.value = formatCurrency(e.target.value);
+        updateActionGrandTotal();
+    }
+});
+
+// --- SUBMISSION WITH CLEANING ---
 document.getElementById('actionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const form = e.target;
     const formData = new FormData(form);
     const submitBtn = document.querySelector('button[form="actionForm"]');
@@ -379,35 +414,26 @@ document.getElementById('actionForm').addEventListener('submit', async (e) => {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
-    // 1. Convert FormData to a structured Object
     const payload = {
         id: formData.get('id') || null,
         spOutputId: formData.get('spOutputId'),
         outputActionId: formData.get('outputActionId'),
-        // planId REMOVED - The backend now traces this via spOutputId
-        
-        // Use ID fields to match your updated controller & model
         responsibleOfficeId: formData.get('responsibleOfficeId'),
         budgetSourceId: formData.get('budgetSourceId'),
-        
         adaptedOutputAction: document.getElementById('action_adapt_toggle').checked 
-            ? formData.get('adaptedOutputAction') 
-            : null,
+            ? formData.get('adaptedOutputAction') : null,
         budgets: {}
     };
 
-    // 2. Extract Budget values dynamically
-    formData.forEach((value, key) => {
-        if (key.startsWith('budgets[')) {
-            // Updated regex to handle year formats like "2025/26" or "2025"
-            const yearMatch = key.match(/budgets\[([^\]]+)\]/);
+    // Robust Regex to handle,2025 or any browser noise
+    for (let [key, value] of formData.entries()) {
+        if (key.includes('budgets[')) {
+            const yearMatch = key.match(/\d+/); // Grabs only the first number (the year)
             if (yearMatch && value.trim() !== '') {
-                const year = yearMatch[1];
-                // Clean commas and whitespace
-                payload.budgets[year] = value.replace(/,/g, '').trim();
+                payload.budgets[yearMatch] = value.replace(/,/g, '').trim();
             }
         }
-    });
+    }
 
     try {
         const response = await fetch('/mda/api/plan/save-output-action', {
@@ -415,25 +441,15 @@ document.getElementById('actionForm').addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
         const result = await response.json();
-
-        if (result.status === 'success') {
-            // Success! Reload to show the new data in the tree
-            location.reload(); 
-        } else {
-            throw new Error(result.message || 'Failed to save action');
-        }
+        if (result.status === 'success') location.reload();
+        else throw new Error(result.message);
     } catch (error) {
-        console.error('Save Error:', error);
-        // Using alert for now, but Swal.fire() is better if you have SweetAlert2
-        alert('Error saving action: ' + error.message);
-    } finally {
+        alert('Save failed: ' + error.message);
         submitBtn.disabled = false;
         submitBtn.innerHTML = 'Save Action & Budget';
     }
 });
-
 // --- DELETE UTILITIES ---
 
 async function confirmDelete(url, text = "This cannot be undone.") {
@@ -475,40 +491,43 @@ async function prepareIndicatorModal(level, parentId, existingData = null) {
             modal: 'outcomeIndicatorModal', form: 'outcomeIndicatorForm', select: 'outcome_indicator_select', 
             hidden: 'modal_outcome_parent_id', toggle: 'outcome_adapt_toggle', container: 'outcome_adaptation_container', 
             api: `/mda/api/library-indicators-by-outcome/${parentId}`,
-            adaptField: 'adaptedOutcomeIndicator', indIdField: 'outcomeIndicatorId'
+            adaptField: 'adaptedOutcomeIndicator', indIdField: 'outcomeIndicatorId',
+            natAlias: 'OutcomeNational' // Matches the 'as' in your controller
         },
         'intermediate': { 
             modal: 'intermediateIndicatorModal', form: 'intIndicatorForm', select: 'intermediate_indicator_select', 
             hidden: 'modal_intermediate_parent_id', toggle: 'int_adapt_toggle', container: 'int_adaptation_container', 
             api: `/mda/api/library/intermediate-indicators/${parentId}`,
-            adaptField: 'adaptedIntermediateOutcomeIndicator', indIdField: 'intermediateOutcomeIndicatorId'
+            adaptField: 'adaptedIntermediateOutcomeIndicator', indIdField: 'intermediateOutcomeIndicatorId',
+            natAlias: 'IntermediateNational'
         },
         'output': { 
             modal: 'outputIndicatorModal', form: 'outputIndicatorForm', select: 'output_indicator_select', 
             hidden: 'modal_output_parent_id', toggle: 'output_adapt_toggle', container: 'output_adaptation_container', 
             api: `/mda/api/library/output-indicators/${parentId}`,
-            adaptField: 'adaptedOutputIndicator', indIdField: 'outputIndicatorId'
+            adaptField: 'adaptedOutputIndicator', indIdField: 'outputIndicatorId',
+            natAlias: 'OutputNational'
         }
     }[lwr];
 
     const form = document.getElementById(config.form);
     if (!form) return;
 
-    // 1. Reset Form & Set Parent ID
     form.reset(); 
     if (form.querySelector('[name="id"]')) form.querySelector('[name="id"]').value = existingData?.id || '';
     document.getElementById(config.hidden).value = parentId;
 
-    // 2. Load Library Options
     const selectEl = document.getElementById(config.select);
     selectEl.innerHTML = '<option>Loading indicators...</option>';
     
-    // Show Modal immediately for better UX
     bootstrap.Modal.getOrCreateInstance(document.getElementById(config.modal)).show();
 
     try {
         const res = await fetch(config.api);
         const indicators = await res.json();
+
+        // Store indicators on the form element for easy access by the change listener
+        form.dataset.indicators = JSON.stringify(indicators);
 
         selectEl.innerHTML = `<option value="">-- Select ${level} Indicator --</option>`;
         indicators.forEach(ind => {
@@ -516,44 +535,125 @@ async function prepareIndicatorModal(level, parentId, existingData = null) {
             selectEl.appendChild(new Option(text, ind.id));
         });
 
-        // 3. POPULATE EDIT DATA (If editing)
-        if (existingData) {
-            // Set Library Selection
-            selectEl.value = existingData[config.indIdField];
+        // --- NEW: THE CHANGE LISTENER ---
+        selectEl.onchange = function() {
+            const selectedId = this.value;
+            const ind = indicators.find(i => i.id == selectedId);
+            updateNationalReference(form, ind, config.natAlias);
+        };
 
-            // Set Baseline and NEW fields
+        if (existingData) {
+            selectEl.value = existingData[config.indIdField];
+            
+            // Set basic fields
             if (form.querySelector('[name="baselineValue"]')) 
                 form.querySelector('[name="baselineValue"]').value = existingData.baselineValue || '';
-            
             if (form.querySelector('[name="responsibleOfficeId"]')) 
                 form.querySelector('[name="responsibleOfficeId"]').value = existingData.responsibleOfficeId || '';
-            
             if (form.querySelector('[name="dataSource"]')) 
                 form.querySelector('[name="dataSource"]').value = existingData.dataSource || '';
 
-            // Handle Adaptation
+            // Handle Adaptation logic (Keep as you had it)
             const adaptContent = existingData[config.adaptField];
+            const toggle = document.getElementById(config.toggle);
+            const container = document.getElementById(config.container);
             if (adaptContent) {
-                document.getElementById(config.toggle).checked = true;
-                document.getElementById(config.container).style.display = 'block';
+                toggle.checked = true;
+                container.style.display = 'block';
                 form.querySelector(`textarea[name="${config.adaptField}"]`).value = adaptContent;
             } else {
-                document.getElementById(config.toggle).checked = false;
-                document.getElementById(config.container).style.display = 'none';
+                toggle.checked = false;
+                container.style.display = 'none';
             }
 
             // Populate Targets
-            // Assuming your backend includes the targets in a 'SelectedTargets' or 'Targets' array
             const targets = existingData.SelectedTargets || existingData.Targets || [];
             targets.forEach(t => {
                 const targetInput = form.querySelector(`input[name="targets[${t.fy}]"]`);
                 if (targetInput) targetInput.value = t.val;
             });
+
+            // Trigger the National Reference update for the edit view
+            const currentInd = indicators.find(i => i.id == selectEl.value);
+            updateNationalReference(form, currentInd, config.natAlias);
         }
 
     } catch (err) {
         console.error("Indicator Load Error:", err);
         selectEl.innerHTML = '<option>Error loading library</option>';
+    }
+}
+
+/**
+ * Helper to update Units and NDP Targets in the modal
+ */
+/**
+ * Updates Units, NDP Benchmarks, and Baseline styling in the active modal.
+ * @param {HTMLFormElement} form - The current active form (Outcome, Int, or Output).
+ * @param {Object} indicator - The full indicator object from the library API.
+ * @param {String} alias - The alias string (e.g., 'OutcomeNational', 'IntermediateNational').
+ */
+function updateNationalReference(form, indicator, alias) {
+    // 1. Extract Alignment data and Unit
+    const align = indicator ? indicator[alias] : null;
+    const rawUnit = align?.unit_of_measure || '';
+    const unit = rawUnit.trim();
+    const displayUnit = unit || '---';
+
+    // 2. Determine Prefix (for Outcome, Intermediate, or Output IDs)
+    let idPrefix = "";
+    if (alias.toLowerCase().includes("intermediate")) idPrefix = "int_";
+    if (alias.toLowerCase().includes("output")) idPrefix = "out_";
+
+    // 3. Update Unit Badge and Input-Group Append (Suffix boxes)
+    const badge = form.querySelector('[id$="_unit_badge"]');
+    if (badge) badge.textContent = `Unit: ${displayUnit}`;
+    
+    form.querySelectorAll('.unit-append').forEach(el => {
+        el.textContent = displayUnit;
+    });
+
+    // 4. Baseline Input Logic (Unlock and Placeholder)
+    const baselineInput = form.querySelector('[name="baselineValue"]');
+    if (baselineInput) {
+        if (indicator) {
+            baselineInput.removeAttribute('readonly');
+            // Show unit in placeholder for clarity
+            baselineInput.placeholder = unit ? `Enter baseline (${unit})...` : "0.00";
+        } else {
+            baselineInput.placeholder = "Wait for selection...";
+            baselineInput.value = "";
+            baselineInput.setAttribute('readonly', true);
+        }
+    }
+
+    // 5. Update NDP Target Labels (The Blue Reference Row)
+    // Clear old values first
+    form.querySelectorAll(`[id^="${idPrefix}nat_val_"]`).forEach(el => el.textContent = '--');
+
+    if (align && align.YearlyValues) {
+        align.YearlyValues.forEach(nv => {
+            const label = form.querySelector(`#${idPrefix}nat_val_${nv.target_year}`);
+            if (label) {
+                const formattedVal = nv.value ? nv.value.toLocaleString() : '0';
+                
+                // --- Formatting Logic ---
+                const isCurrency = unit.toUpperCase() === 'UGX';
+                const genericUnits = ['number', 'qty', 'count', 'quantity', '---', ''];
+                const isGeneric = genericUnits.includes(unit.toLowerCase());
+
+                if (isCurrency) {
+                    // Financial Prefix
+                    label.textContent = `UGX ${formattedVal}`; 
+                } else if (isGeneric) {
+                    // Clean Number (No unit text)
+                    label.textContent = formattedVal; 
+                } else {
+                    // Standard Suffix (e.g., 85 %)
+                    label.textContent = `${formattedVal} ${unit}`; 
+                }
+            }
+        });
     }
 }
 async function editIndicator(level, id) {
@@ -563,19 +663,22 @@ async function editIndicator(level, id) {
             modal: 'outcomeIndicatorModal', form: 'outcomeIndicatorForm', select: 'outcome_indicator_select',
             toggle: 'outcome_adapt_toggle', container: 'outcome_adaptation_container',
             parentIdField: 'spOutcomeId', adaptField: 'adaptedOutcomeIndicator',
-            fetchUrl: (pid) => `/mda/api/library-indicators-by-outcome/${pid}`
+            fetchUrl: (pid) => `/mda/api/library-indicators-by-outcome/${pid}`,
+            natAlias: 'OutcomeNational' // ADD THIS
         },
         'intermediate': { 
             modal: 'intermediateIndicatorModal', form: 'intIndicatorForm', select: 'intermediate_indicator_select',
             toggle: 'int_adapt_toggle', container: 'int_adaptation_container',
             parentIdField: 'spIntermediateOutcomeId', adaptField: 'adaptedIntermediateOutcomeIndicator',
-            fetchUrl: (pid) => `/mda/api/library/intermediate-indicators/${pid}`
+            fetchUrl: (pid) => `/mda/api/library/intermediate-indicators/${pid}`,
+            natAlias: 'IntermediateNational' // ADD THIS
         },
         'output': { 
             modal: 'outputIndicatorModal', form: 'outputIndicatorForm', select: 'output_indicator_select',
             toggle: 'output_adapt_toggle', container: 'output_adaptation_container',
             parentIdField: 'spOutputId', adaptField: 'adaptedOutputIndicator',
-            fetchUrl: (pid) => `/mda/api/library/output-indicators/${pid}`
+            fetchUrl: (pid) => `/mda/api/library/output-indicators/${pid}`,
+            natAlias: 'OutputNational' // ADD THIS
         }
     }[lwr];
 
@@ -584,70 +687,130 @@ async function editIndicator(level, id) {
         const data = await res.json();
         const form = document.getElementById(config.form);
 
-        // 1. Populate Library Dropdown
+        // 1. Populate Parent ID
         const parentId = data[config.parentIdField];
-        
-        // --- STEP 1.5: THE MISSING LINK ---
-        // Find the hidden input (e.g., #modal_outcome_parent_id) and set its value
         const parentIdInput = form.querySelector(`[name="${config.parentIdField}"]`);
-        if (parentIdInput) {
-            parentIdInput.value = parentId || '';
-            console.log(`Debug: Set ${config.parentIdField} to ${parentId}`);
-        }
-        // ----------------------------------
+        if (parentIdInput) parentIdInput.value = parentId || '';
 
+        // 2. Fetch Library & Populate Dropdown
         if (parentId) {
             const listRes = await fetch(config.fetchUrl(parentId));
             const indicators = await listRes.json();
+            
+            // Store for the change listener (same as prepareModal)
+            form.dataset.indicators = JSON.stringify(indicators);
+
             const selectEl = document.getElementById(config.select);
             selectEl.innerHTML = '<option value="">Select Indicator...</option>';
+            
             indicators.forEach(ind => {
                 const text = ind.indicator || ind.indicatorName || ind.intermediate_outcome_indicator || ind.output_indicator;
-                const opt = new Option(text, ind.id);
-                selectEl.appendChild(opt);
+                selectEl.appendChild(new Option(text, ind.id));
             });
-            selectEl.value = data.outcomeIndicatorId || data.intermediateOutcomeIndicatorId || data.outputIndicatorId;
+
+            // Set the current selection
+            const selectedIndicatorId = data.outcomeIndicatorId || data.intermediateOutcomeIndicatorId || data.outputIndicatorId;
+            selectEl.value = selectedIndicatorId;
+
+            // --- THE NEW PART: Update Units & NDP Targets ---
+            const currentInd = indicators.find(i => i.id == selectedIndicatorId);
+            if (typeof updateNationalReference === 'function') {
+                updateNationalReference(form, currentInd, config.natAlias);
+            }
+
+            // Re-bind the change listener so it works during the edit session
+            selectEl.onchange = function() {
+                const ind = indicators.find(i => i.id == this.value);
+                updateNationalReference(form, ind, config.natAlias);
+            };
         }
 
-        // 2. Fill Basic Fields
+        // 3. Fill Basic Fields (Baseline, Office, Source)
         form.querySelector('[name="id"]').value = id;
         form.querySelector('[name="baselineValue"]').value = data.baselineValue || '';
         
-        const officeSelect = form.querySelector('[name="responsibleOfficeId"]');
-        if (officeSelect) officeSelect.value = data.responsibleOfficeId || '';
+        if (form.querySelector('[name="responsibleOfficeId"]')) 
+            form.querySelector('[name="responsibleOfficeId"]').value = data.responsibleOfficeId || '';
 
-        const sourceInput = form.querySelector('[name="dataSource"]');
-        if (sourceInput) sourceInput.value = data.dataSource || '';
+        if (form.querySelector('[name="dataSource"]')) 
+            form.querySelector('[name="dataSource"]').value = data.dataSource || '';
 
-        // 3. Handle Adaptation
+        // 4. Handle Adaptation Toggle
         const adaptText = data[config.adaptField];
         const toggle = document.getElementById(config.toggle);
         const container = document.getElementById(config.container);
         const textarea = form.querySelector('textarea');
 
-        if (adaptText && adaptText !== '0' && adaptText !== '') {
+        if (adaptText && adaptText !== '') {
             toggle.checked = true;
             container.style.display = 'block';
             if (textarea) textarea.value = adaptText;
         } else {
             toggle.checked = false;
             container.style.display = 'none';
-            if (textarea) textarea.value = '';
         }
 
-        // 4. Fill Yearly Targets
+        // 5. Fill Yearly Targets
         form.querySelectorAll('input[name^="targets["]').forEach(input => input.value = '');
-        
         const targetList = data.Targets || data.SelectedTargets || [];
         targetList.forEach(t => {
             const targetInput = form.querySelector(`[name="targets[${t.fy}]"]`);
             if (targetInput) targetInput.value = t.val;
         });
 
-        // 5. Show the modal
         bootstrap.Modal.getOrCreateInstance(document.getElementById(config.modal)).show();
     } catch (err) {
         console.error("Edit Load Error:", err);
         alert("Could not load indicator details.");
+    }
+}
+
+
+async function submitToNPA(planId) {
+    const result = await Swal.fire({
+        title: 'Submit to NPA?',
+        text: "This will lock the plan and notify the National Planning Authority. You won't be able to undo this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#198754', // Success green
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Submit Plan',
+        cancelButtonText: 'Wait, go back'
+    });
+
+    if (result.isConfirmed) {
+        // Show loading state
+        Swal.fire({
+            title: 'Submitting...',
+            text: 'Please wait while we finalize your framework.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const response = await fetch(`/mda/plans/${planId}/submit-npa`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                await Swal.fire({
+                    title: 'Success!',
+                    text: 'Your Strategic Plan has been submitted to NPA.',
+                    icon: 'success'
+                });
+                window.location.href = '/mda/plans';
+            } else {
+                throw new Error(data.message || 'Submission failed');
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error!',
+                text: error.message,
+                icon: 'error'
+            });
+        }
     }
 }

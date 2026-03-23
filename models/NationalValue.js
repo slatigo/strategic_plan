@@ -4,10 +4,14 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class NationalValue extends Model {
     static associate(models) {
-      // Link back to the Baseline/Alignment table
+      /**
+       * CRITICAL FIX: 
+       * targetKey MUST be 'indicatorCode' (camelCase) to match the 
+       * property name we just defined in NationalAlignment.js.
+       */
       this.belongsTo(models.NationalAlignment, {
         foreignKey: 'indicator_code',
-        targetKey: 'indicator_code',
+        targetKey: 'indicatorCode',
         as: 'Alignment'
       });
     }
@@ -24,7 +28,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       field: 'target_year'
     },
-    // CHANGED: From STRING to DECIMAL to match the new DB structure
     value: {
       type: DataTypes.DECIMAL(20, 2),
       allowNull: false,
@@ -34,7 +37,6 @@ module.exports = (sequelize, DataTypes) => {
         return val === null ? null : parseFloat(val);
       }
     },
-    // Adding remarks here too in case you have yearly-specific notes
     remarks: {
       type: DataTypes.TEXT,
       allowNull: true
@@ -42,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'NationalValue',
-    tableName: 'nationalvalues', // Ensure lowercase to match your SQL style
+    tableName: 'nationalvalues', 
     underscored: true,
     timestamps: false
   });

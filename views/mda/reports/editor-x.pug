@@ -1,0 +1,211 @@
+extends ../layout
+
+block mda_content
+  link(href="/stylesheets/plan-editor.css" rel="stylesheet")
+  
+  //- 1. SET LOCK STATE & YEAR LOGIC
+  - const isLocked = ['Submitted', 'Approved', 'Under Review'].includes(report.status)
+  - const reportingFY = report.Call.reportingYear // e.g., "2025/26"
+  
+  .container-fluid.py-4
+    //- Header Section
+    - const baseYear = parseInt(reportingFY)
+    - const displayFY = `FY ${baseYear}/${(baseYear + 1).toString().slice(-2)}`
+
+    if isLocked
+      .alert.alert-info.shadow-sm.border-0.d-flex.align-items-center.mb-4
+        i.fas.fa-lock.me-3.fa-2x
+        div
+          h6.mb-0.fw-bold This report is in View-Only mode.
+          small Status: #{report.status} | Submitted on #{report.submissionDate ? new Date(report.submissionDate).toLocaleDateString() : 'N/A'}
+
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h2.mb-0 
+          i.fas.fa-file-signature.me-2.text-primary
+          | Quarterly Performance Report
+        p.text-muted Programme: #{plan.Programme ? plan.Programme.programmeName : 'Not Assigned'}
+        span.badge.bg-dark #{displayFY} | Quarter: #{report.Call.quarter}
+    
+      .btn-group.shadow-sm
+        if !isLocked
+          button.btn.btn-outline-primary#saveDraftBtn(type="submit" form="reportForm")
+            i.fas.fa-save.me-2
+            | Save Draft
+          button.btn.btn-success(type="button" onclick="confirmSubmission()")
+            i.fas.fa-paper-plane.me-2
+            | Final Submit
+        else
+          a.btn.btn-outline-secondary(href="/mda/reports")
+            i.fas.fa-arrow-left.me-2
+            | Back to List
+
+    form#reportForm(method="POST" action="/mda/reports/save-progress")
+      input(type="hidden" name="mdaReportId" value=report.id)
+
+      if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
+        each obj in (plan.SelectedObjectives || [])
+          .card.shadow-sm.mb-5.border-start.border-4.border-primary
+            .card-header.bg-white.py-3
+              span.badge.bg-primary.mb-2 Objective #{obj.LibraryObjective ? obj.LibraryObjective.objectiveCode : 'N/A'}
+              h5.card-title.mb-0.fw-bold #{obj.orgObjective}
+
+            .card-body.p-4
+              if obj.SelectedOutcomes && obj.SelectedOutcomes.length > 0
+                each oc in (obj.SelectedOutcomes || [])
+                  .outcome-box.mb-5.p-0.bg-white.rounded.border.shadow-sm
+                    .card-header.bg-light.border-bottom.py-3
+                      - const ocLib = oc.LibraryOutcome || {}
+                      span.badge.bg-info.text-dark.mb-1 OUTCOME: #{ocLib.outcomeCode || 'N/A'}
+                      h6.fw-bold.mb-0 #{ocLib.outcomeName || 'Strategic Outcome'}
+                    
+                    .card-body.p-4
+                      //- 2.1 OUTCOME INDICATORS
+                      if oc.SelectedIndicators && oc.SelectedIndicators.length > 0
+                        .table-responsive.mb-4
+                          table.table.table-sm.table-bordered.align-middle
+                            thead.bg-light.small
+                              tr
+                                th(style="width: 40%") Outcome Indicator
+                                th.text-center Unit
+                                th.text-center Target (#{reportingFY})
+                                th.text-center(style="width: 160px") Actual Value
+                                th Remarks
+                            tbody
+                              each ind in (oc.SelectedIndicators || [])
+                                if ind
+                                  - const entry = (report.OutcomeEntries || []).find(e => e.spOutcomeIndicatorId === ind.id)
+                                  - const libInd = ind.LibraryIndicator || {}
+                                  - const nat = libInd.OutcomeNational
+                                  - const targetObj = (ind.Targets || []).find(t => t.fy === reportingFY)
+                                  tr
+                                    td.small.fw-bold 
+                                      span.text-muted.me-2 [#{libInd.indicatorCode || 'N/A'}]
+                                      | #{libInd.indicator || 'Indicator'}
+                                    td.text-center: span.badge.bg-secondary.x-small #{nat ? nat.unit_of_measure : 'N/A'}
+                                    td.text-center.fw-bold.text-primary 
+                                      | #{targetObj && targetObj.val ? Number(targetObj.val).toLocaleString() : '0'}
+                                    td
+                                      input.form-control.form-control-sm.text-end.number-separator(
+                                        type="text" 
+                                        name=`outcomes[${ind.id}][val]` 
+                                        value=(entry && entry.actualValue != null ? entry.actualValue.toLocaleString() : '')
+                                        oninput="formatNumber(this)"
+                                        readonly=isLocked
+                                      )
+                                    td: input.form-control.form-control-sm(type="text" name=`outcomes[${ind.id}][rem]` value=(entry ? entry.remarks : '') readonly=isLocked)
+
+                      //- LEVEL 3: INTERMEDIATE OUTCOMES
+                      if oc.SelectedIntermediates && oc.SelectedIntermediates.length > 0
+                        each io in (oc.SelectedIntermediates || [])
+                          - const ioLib = io.LibraryIntermediate || {}
+                          .intermediate-item.ps-3.mb-4.border-start.border-3.border-info.ms-4
+                            small.text-info.fw-bold.x-small #{ioLib.intermediateOutcomeCode || 'INT'}
+                            h6.mb-2.small.fw-bold #{ioLib.intermediateOutcome || 'Intermediate Outcome'}
+                            
+                            if io.SelectedIndicators && io.SelectedIndicators.length > 0
+                              .ms-3.mb-3
+                                each iInd in (io.SelectedIndicators || [])
+                                  if iInd
+                                    - const iEntry = (report.IntermediateEntries || []).find(e => e.spIntermediateOutcomeIndicatorId === iInd.id)
+                                    - const libIInd = iInd.LibraryIndicator || {}
+                                    - const iNat = libIInd.IntermediateNational
+                                    - const iTargetObj = (iInd.Targets || []).find(t => t.fy === reportingFY)
+                                    .row.g-2.mb-2.align-items-center
+                                      .col-md-4
+                                        span.x-small.text-muted.me-1 [#{libIInd.indicatorCode || 'N/A'}]
+                                        span.small.fw-bold #{libIInd.indicator}
+                                      .col-md-1.text-center
+                                        span.badge.bg-secondary.x-small #{iNat ? iNat.unit_of_measure : 'N/A'}
+                                      .col-md-2.text-center
+                                        span.badge.bg-light.text-muted.border.x-small Target: #{iTargetObj && iTargetObj.val ? Number(iTargetObj.val).toLocaleString() : '0'}
+                                      .col-md-2
+                                        input.form-control.form-control-sm.text-end.number-separator(
+                                          type="text" 
+                                          name=`intermediates[${iInd.id}][val]` 
+                                          value=(iEntry && iEntry.actualValue != null ? iEntry.actualValue.toLocaleString() : '')
+                                          oninput="formatNumber(this)"
+                                          readonly=isLocked
+                                        )
+                                      .col-md-3: input.form-control.form-control-sm(type="text" name=`intermediates[${iInd.id}][rem]` value=(iEntry ? iEntry.remarks : '') readonly=isLocked)
+
+                            //- LEVEL 4: INTERVENTIONS
+                            if io.SelectedInterventions && io.SelectedInterventions.length > 0
+                              each inv in (io.SelectedInterventions || [])
+                                - const invLib = inv.LibraryIntervention || {}
+                                .ms-3.mt-3
+                                  p.x-small.fw-bold.text-muted.mb-2 
+                                    i.fas.fa-chevron-right.me-1.text-success
+                                    | INTERVENTION: #{invLib.interventionCode || 'N/A'} - #{invLib.intervention || 'N/A'}
+
+                                  if inv.SelectedOutputs && inv.SelectedOutputs.length > 0
+                                    each outp in (inv.SelectedOutputs || [])
+                                      - const outpLib = outp.LibraryOutput || {}
+                                      .output-item.p-3.bg-white.border.rounded.mb-3.shadow-sm
+                                        h6.small.fw-bold.text-primary.mb-3
+                                          i.fas.fa-caret-right.me-2
+                                          | OUTPUT: #{outpLib.outputCode || 'N/A'} - #{outpLib.output || 'Deliverable'}
+                                        
+                                        if outp.SelectedIndicators && outp.SelectedIndicators.length > 0
+                                          .ms-3.mb-3
+                                            each oInd in (outp.SelectedIndicators || [])
+                                              if oInd
+                                                - const oEntry = (report.OutputEntries || []).find(e => e.spOutputIndicatorId === oInd.id)
+                                                - const libOInd = oInd.LibraryIndicator || {}
+                                                - const oNat = libOInd.OutputNational
+                                                - const oTargetObj = (oInd.Targets || []).find(t => t.fy === reportingFY)
+                                                .row.g-2.mb-1.align-items-center
+                                                  .col-md-4
+                                                    span.x-small.text-muted.me-1 [#{libOInd.indicatorCode || 'N/A'}]
+                                                    span.x-small.fw-bold #{libOInd.indicator}
+                                                  .col-md-1.text-center
+                                                    span.badge.bg-secondary.x-small #{oNat ? oNat.unit_of_measure : 'N/A'}
+                                                  .col-md-2.text-center
+                                                    span.badge.bg-light.text-primary.border.x-small Target: #{oTargetObj && oTargetObj.val ? Number(oTargetObj.val).toLocaleString() : '0'}
+                                                  .col-md-2
+                                                    input.form-control.form-control-sm.text-end.number-separator(
+                                                      type="text" 
+                                                      name=`outputs[${oInd.id}][val]` 
+                                                      value=(oEntry && oEntry.actualValue != null ? oEntry.actualValue.toLocaleString() : '')
+                                                      oninput="formatNumber(this)"
+                                                      readonly=isLocked
+                                                    )
+                                                  .col-md-3: input.form-control.form-control-sm(type="text" name=`outputs[${oInd.id}][rem]` value=(oEntry ? oEntry.remarks : '') readonly=isLocked)
+
+                                        //- OUTPUT ACTIONS (EXPENDITURE)
+                                        if outp.SelectedActions && outp.SelectedActions.length > 0
+                                          .table-responsive.mt-2.ms-3
+                                            table.table.table-sm.table-hover.border.mb-0
+                                              thead.bg-light: tr
+                                                th.x-small.text-muted ACTION / ACTIVITY
+                                                th.x-small.text-muted.text-center Budget (#{reportingFY})
+                                                th.x-small.text-muted.text-center(style="width: 180px") SPEND (UGX)
+                                                th.x-small.text-muted REMARKS
+                                              tbody
+                                                each act in (outp.SelectedActions || [])
+                                                  if act
+                                                    - const aEntry = (report.ActionEntries || []).find(e => e.spOutputActionId === act.id)
+                                                    - const libAct = act.LibraryAction || {}
+                                                    - const budgetObj = (act.Budgets || []).find(b => b.fy === reportingFY)
+                                                    tr
+                                                      td.py-2
+                                                        span.text-muted.x-small.fw-bold.me-1 [#{libAct.actionCode || 'ACT'}]
+                                                        span.small.fw-bold #{act.adaptedOutputAction || libAct.action || 'Action'}
+                                                      td.text-center.small.fw-bold.text-secondary
+                                                        | #{budgetObj && budgetObj.val ? Number(budgetObj.val).toLocaleString() : '0'}
+                                                      td
+                                                        input.form-control.form-control-sm.text-end.number-separator(
+                                                          type="text" 
+                                                          name=`actions[${act.id}][spend]` 
+                                                          value=(aEntry && aEntry.actualExpenditure != null ? aEntry.actualExpenditure.toLocaleString() : '')
+                                                          oninput="formatNumber(this)"
+                                                          readonly=isLocked
+                                                        )
+                                                      td: input.form-control.form-control-sm(type="text" name=`actions[${act.id}][rem]` value=(aEntry ? aEntry.remarks : '') readonly=isLocked)
+      else
+        .alert.alert-info.text-center.py-5
+          i.fas.fa-exclamation-triangle.fa-2x.mb-3
+          p No strategic framework selections found for this plan.
+
+block scripts
+  script(src="/js/mda/report-editor.js")

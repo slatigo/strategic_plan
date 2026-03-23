@@ -1,0 +1,166 @@
+extends ./layout
+
+//- 1. Pull in your complex logic from the MDA folder
+include ../mda/plans/mixins/_plan_mixins.pug
+
+block npa_content
+  link(href="/stylesheets/plan-editor.css" rel="stylesheet")
+  
+  .container-fluid.py-4
+    //- Header with MDA Info
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        span.badge.bg-dark.mb-2 Submission Review
+        h2.mb-0= plan.Mda.name
+        p.text-muted Programme: #{plan.Programme ? plan.Programme.programmeName : 'Not Assigned'}
+      
+      .btn-group
+        a.btn.btn-outline-primary(href=`/npa/plans/view/${plan.id}?print=true` target="_blank")
+          i.fas.fa-print.me-2
+          | Print for Board
+
+    .row
+      .col-lg-9
+        if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
+          each obj in plan.SelectedObjectives
+            .card.shadow-sm.mb-5.border-start.border-4.border-primary
+              .card-header.bg-white.py-3
+                span.badge.bg-primary.mb-2 Objective #{obj.LibraryObjective.objectiveCode}
+                h5.card-title.mb-0 #{obj.orgObjective}
+
+              .card-body.p-4
+                each oc in obj.SelectedOutcomes
+                  .outcome-box.mb-5.p-0.bg-white.rounded.border.shadow-sm
+                    .card-header.bg-light.border-bottom.py-3
+                      span.badge.bg-info.text-dark.mb-1 OUTCOME: #{oc.LibraryOutcome.outcomeCode}
+                      h6.fw-bold.mb-0= oc.LibraryOutcome.outcomeName
+
+                    .card-body.position-relative.pb-4
+                      //- Visual connecting line
+                      div(style="position:absolute; left:20px; top:0; bottom:0; width:2px; background:#e9ecef; z-index:0;")
+
+                      //- 1. OUTCOME INDICATORS
+                      if oc.SelectedIndicators && oc.SelectedIndicators.length > 0
+                        .ms-4.mb-4.position-relative(style="z-index:1")
+                          h6.text-uppercase.x-small.fw-bold.text-muted.mb-3 Performance Indicators (Outcome)
+                          each ind in oc.SelectedIndicators
+                            +indicatorRow(ind, 'Outcome', years, true)
+
+                      //- 2. INTERMEDIATE OUTCOMES (THE MISSING PIECE)
+                      if oc.SelectedIntermediates && oc.SelectedIntermediates.length > 0
+                        .ms-4.position-relative(style="z-index:1")
+                          h6.text-uppercase.x-small.fw-bold.text-muted.mb-3 Intermediate Outcomes
+                          each io in oc.SelectedIntermediates
+                            .intermediate-item.ps-3.mb-4.border-start.border-3.border-info
+                              small.text-info.fw-bold.x-small= io.LibraryIntermediate.intermediateOutcomeCode
+                              h6.mb-1.small.fw-bold= io.LibraryIntermediate.intermediateOutcome
+                              
+                              //- Intermediate Indicators
+                              if io.SelectedIndicators && io.SelectedIndicators.length > 0
+                                .ms-3.mt-2.mb-3
+                                  each iInd in io.SelectedIndicators
+                                    +indicatorRow(iInd, 'Intermediate', years, true)
+
+                              //- 3. INTERVENTIONS & OUTPUTS
+                              if io.SelectedInterventions && io.SelectedInterventions.length > 0
+                                .ms-3.mt-3
+                                  each inv in io.SelectedInterventions
+                                    .intervention-card.p-3.bg-light.border.rounded.mb-3
+                                      h6.small.fw-bold.text-success INTERVENTION: #{inv.LibraryIntervention.interventionCode}
+                                      p.small.mb-2= inv.LibraryIntervention.intervention
+
+                                      //- 4. OUTPUTS
+                                      if inv.SelectedOutputs && inv.SelectedOutputs.length > 0
+                                        each outp in inv.SelectedOutputs
+                                          .output-item.p-3.bg-white.border.rounded.mb-3.shadow-sm
+                                            h6.small.fw-bold.text-primary.mb-2 
+                                              i.fas.fa-caret-right.me-2
+                                              | OUTPUT: #{outp.LibraryOutput.output_code || outp.LibraryOutput.outputCode} - #{outp.LibraryOutput.output}
+                                            
+                                            //- Output Indicators
+                                            if outp.SelectedIndicators && outp.SelectedIndicators.length > 0
+                                              .ms-3.mb-3
+                                                each opInd in outp.SelectedIndicators
+                                                  +indicatorRow(opInd, 'Output', years, true)
+
+                                            //- 5. ACTIONS & BUDGET TABLE
+                                            if outp.SelectedActions && outp.SelectedActions.length > 0
+                                              .table-responsive.mt-2
+                                                table.table.table-sm.table-hover.align-middle.mb-0
+                                                  thead.bg-light
+                                                    tr
+                                                      th.ps-3.x-small.text-muted ACTION / ACTIVITY
+                                                      each y in years
+                                                        th.x-small.text-muted.text-end.pe-3= y
+                                                  tbody
+                                                    each act in outp.SelectedActions
+                                                      tr
+                                                        td.ps-3.py-2
+                                                          p.mb-1.small.fw-bold.text-dark= act.adaptedOutputAction || act.LibraryAction.action
+                                                          span.text-secondary.x-small
+                                                            i.fas.fa-university.me-1
+                                                            | #{act.ResponsibleOffice ? act.ResponsibleOffice.name : 'Unassigned'}
+                                                        each y in years
+                                                          td.text-end.pe-3
+                                                            - const bVal = act.Budgets ? act.Budgets.find(b => b.fy == y) : null
+                                                            span.small.font-monospace(class=bVal ? 'fw-bold text-dark' : 'text-muted')
+                                                              | #{bVal ? 'UGX ' + Number(bVal.val).toLocaleString() : '-'}
+        else
+          .alert.alert-warning No content submitted for this plan.
+
+      //- 3. The Reviewer Sidebar
+      //- The Sidebar Decision Toolbox
+      .col-lg-3
+          .card.shadow-sm.sticky-top(style="top: 20px;")
+            .card-header.bg-primary.text-white
+              i.fas.fa-history.me-2
+              | Review Timeline
+            .card-body.p-0
+              //- 1. THE HISTORY LIST
+              .comment-thread.p-3(style="max-height: 450px; overflow-y: auto; background: #f8f9fa;")
+                if plan.Comments && plan.Comments.length > 0
+                  each comment in plan.Comments
+                    .comment-item.mb-3.pb-2.border-bottom
+                      .d-flex.justify-content-between.align-items-start
+                        //- Note the change from comment.User to comment.Author
+                        small.fw-bold(class=comment.isAdminComment ? 'text-primary' : 'text-success')
+                          | #{comment.Author ? comment.Author.name : 'System'} 
+                        small.text-muted(style="font-size: 0.7rem;") 
+                          | #{new Date(comment.createdAt).toLocaleDateString()}
+                      
+                      p.small.mb-1.text-dark= comment.message
+                      
+                      if comment.statusAtTime
+                        span.badge.text-uppercase(style="font-size: 0.65rem;" class=comment.statusAtTime === 'Approved' ? 'bg-success' : 'bg-warning text-dark')
+                          | #{comment.statusAtTime}
+                else
+                  .text-center.py-4
+                    i.fas.fa-comments.text-muted.fa-2x.mb-2
+                    p.text-muted.small No history recorded yet.
+
+              //- 2. THE ACTION BOX
+              if plan.status !== 'Approved'
+                .p-3.border-top.bg-white
+                  label.small.fw-bold.mb-2 Add Remark / Decision
+                  textarea#remarks.form-control.form-control-sm.mb-3(rows="4" placeholder="Type your feedback here...")
+                  
+                  .d-grid.gap-2
+                    button.btn.btn-sm.btn-success(onclick="handleDecision('Approved')") 
+                      i.fas.fa-check.me-1
+                      | Approve Plan
+                    button.btn.btn-sm.btn-warning(onclick="handleDecision('Pending Correction')")
+                      i.fas.fa-undo.me-1
+                      | Send for Revision
+              else
+                .p-4.text-center.bg-light
+                  .text-success.mb-2
+                    i.fas.fa-check-circle.fa-3x
+                  h6.fw-bold.text-success Plan Approved
+                  p.small.text-muted.mb-0 No further actions required.
+block scripts
+  script.
+    window.planConfig = {
+      id: "#{plan.id}",
+      callId: "#{plan.callId}"
+    };
+  script(src="/js/npa/review-plan.js")

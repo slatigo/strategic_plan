@@ -1,0 +1,10 @@
+- const ioLib = io.LibraryIntermediate || {}
+.intermediate-item.ps-3.mb-4.border-start.border-3.border-info.ms-4
+  small.text-info.fw-bold.x-small #{ioLib.intermediateOutcomeCode || 'INT'}
+  h6.mb-2.small.fw-bold #{ioLib.intermediateOutcome || 'Intermediate Outcome'}
+  
+  if io.SelectedIndicators && io.SelectedIndicators.length > 0
+    .ms-3.mb-3
+      each iInd in io.SelectedIndicators
+        //- Instead of 15 lines of HTML here, we use one line:
+        include ./_intermediate_indicators_row

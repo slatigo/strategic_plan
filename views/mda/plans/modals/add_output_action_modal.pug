@@ -1,0 +1,102 @@
+#actionModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-xl
+    .modal-content
+      .modal-header.bg-warning.text-dark
+        h5.modal-title 
+          i.fas.fa-hands-helping.me-2
+          | Output Action & Budgeting
+        button.btn-close(type="button" data-bs-dismiss="modal")
+      .modal-body
+        form#actionForm(action="/mda/plans/actions/save" method="POST")
+          //- Hidden Fields
+          input(type="hidden" name="id")
+          input#modal_action_output_id(type="hidden" name="spOutputId")
+          input(type="hidden" name="planId" value=(plan ? plan.id : ''))
+          
+          .row
+            //- 1. National Action Selection
+            .col-md-12.mb-3
+              label.form-label.fw-bold Select National Action
+              select#action_select.form-select(name="outputActionId" required)
+                option(value="") -- Select Action --
+
+            //- 2. Adaptation Switch
+            .col-md-12.mb-3
+              .form-check.form-switch.mb-2
+                input#action_adapt_toggle.form-check-input.adapt-toggle(
+                  type="checkbox" 
+                  name="is_adapted" 
+                  role="switch" 
+                  data-target-container="action_adaptation_container"
+                )
+                label.form-check-label.fw-bold(for="action_adapt_toggle") Adapt this action for MUBS?
+              
+              #action_adaptation_container(style="display: none;")
+                label.form-label.text-dark.small Customized Action Description
+                textarea#action_adapted_name.form-control(
+                  name="adaptedOutputAction" 
+                  rows="2" 
+                  placeholder="Describe the specific MUBS activity..."
+                )
+                p.text-muted.x-small.mt-1 Customizing this helps align national strategies with institutional operations.
+
+            //- 3. Responsibility and Funding
+            .col-md-6.mb-3
+              label.form-label.fw-bold Responsible Office/Unit
+              select.form-select(name="responsibleOfficeId" required)
+                option(value="") -- Select Office --
+                - if (offices && offices.length > 0)
+                  - for (var i = 0; i < offices.length; i++)
+                    option(value=offices[i].id) #{offices[i].name}
+
+            .col-md-6.mb-3
+              label.form-label.fw-bold Primary Funding Source
+              select.form-select(name="budgetSourceId" required)
+                option(value="") -- Select Source --
+                - if (budgetSources && budgetSources.length > 0)
+                  - for (var j = 0; j < budgetSources.length; j++)
+                    option(value=budgetSources[j].id) #{budgetSources[j].code} - #{budgetSources[j].name}
+
+          hr
+          
+          //- 4. Dynamic Budget Section
+          .d-flex.justify-content-between.align-items-center.mb-3
+            h6.fw-bold.mb-0 
+              i.fas.fa-money-bill-wave.me-2.text-success
+              | Annual Budget Estimates
+            span.badge.bg-light.text-dark.border.px-3.small Currency: UGX
+
+          .row.row-cols-1.row-cols-md-5.g-2
+            - var activeYears = (years && years.length > 0) ? years : []
+            each yr in activeYears
+              .col
+                label.small.form-label.fw-bold #{yr}
+                .input-group.input-group-sm
+                  span.input-group-text.bg-light.x-small.fw-bold UGX
+                  input.form-control(
+                    type="text" 
+                    name=`budgets[${yr}]` 
+                    placeholder="0"
+                    data-type="currency"
+                    autocomplete="off"
+                  )
+            
+            - if (activeYears.length === 0)
+              .col-12.text-center.py-3.bg-light.rounded
+                p.text-muted.small.mb-0 No fiscal years defined for this plan.
+
+          //- 5. LIVE TOTAL SUMMARY
+          .row.mt-4
+            .col-12
+              .p-3.bg-dark.text-white.rounded-3.d-flex.justify-content-between.align-items-center.shadow-sm
+                div
+                  span.text-uppercase.ls-wide.opacity-75(style="font-size: 0.7rem;") Cumulative Action Budget
+                  h6.mb-0.fw-bold TOTAL (UGX)
+                div.text-end
+                  h3#action_total_display.mb-0.fw-bold.text-warning 0
+                
+      .modal-footer.bg-light
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Close
+        button.btn.btn-warning.text-dark.px-4(type="submit" form="actionForm") 
+          i.fas.fa-save.me-2
+          | Save Action & Budget

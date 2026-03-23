@@ -3,149 +3,24 @@ const {
   SpObjective, SpOutcome, SpOutcomeIndicator, SpOutcomeIndicatorReport,
   SpIntermediateOutcome, SpIntermediateOutcomeIndicator, SpIntermediateOutcomeIndicatorReport,
   SpOutput, SpOutputIndicator, SpOutputIndicatorReport,
-  SpOutputAction, SpOutputActionReport,OutcomeIndicator,IntermediateOutcomeIndicator,OutputIndictor,NationalAlignment,NationalValues,SpIntervention,Intervention,OutputIndicator,Objective,Outcome,IntermediateOutcome,Output,OutputAction,SpOutputIndicatorTarget,SpOutcomeIndicatorTarget,SpIntermediateOutcomeIndicatorTarget,SpOutputActionBudget,Programme
+  SpOutputAction, SpOutputActionReport,OutcomeIndicator,IntermediateOutcomeIndicator,OutputIndictor,NationalAlignment,NationalValue,SpIntervention,Intervention,OutputIndicator,Objective,Outcome,IntermediateOutcome,Output,OutputAction,SpOutputIndicatorTarget,SpOutcomeIndicatorTarget,SpIntermediateOutcomeIndicatorTarget,SpOutputActionBudget,Programme
 } = require('../../models');
+const reportHelper = require('../../utils/reportFetcher');
+
+// MDA Version (For Editing)
 exports.getReportEditor = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const mdaId = req.user.mdaId;
-
-    // 1. Fetch the Report Envelope with existing entries
-    const report = await MdaReport.findByPk(id, {
-      include: [
-        { model: ReportCall, as: 'Call' },
-        { model: SpOutcomeIndicatorReport, as: 'OutcomeEntries' },
-        { model: SpIntermediateOutcomeIndicatorReport, as: 'IntermediateEntries' },
-        { model: SpOutputIndicatorReport, as: 'OutputEntries' },
-        { model: SpOutputActionReport, as: 'ActionEntries' }
-      ]
-    });
-
-    if (!report || report.mdaId !== mdaId) {
-      return res.redirect('/mda/reports?error=notfound');
+    const data = await reportHelper.getFullReportPackage(req.params.id);
+    
+    if (!data || data.report.mdaId !== req.user.mdaId) {
+        return res.redirect('/mda/reports?error=notfound');
     }
 
-    // 2. Fix the "FY" Logic: 
-    // Construct the string "2025/26" from the reportingYear "2025"
-    const currentFY  = report.Call.reportingYear; 
-
-    // 3. Fetch the Strategic Plan + Library Data + Yearly Targets/Budgets
-    const plan = await StrategicPlan.findOne({
-      where: { 
-        mdaId: mdaId, 
-        callId: report.Call.planCallId 
-      },
-      include: [
-        { model: Programme, as: 'Programme' },
-        {
-          model: SpObjective,
-          as: 'SelectedObjectives',
-          include: [
-            { model: Objective, as: 'LibraryObjective' }, 
-            {
-              model: SpOutcome,
-              as: 'SelectedOutcomes',
-              include: [
-                { model: Outcome, as: 'LibraryOutcome' }, 
-                { 
-                  model: SpOutcomeIndicator, 
-                  as: 'SelectedIndicators',
-                  include: [
-                    { 
-                      model: OutcomeIndicator, 
-                      as: 'LibraryIndicator',
-                      include: [{ model: NationalAlignment, as: 'NationalData' }] 
-                    },
-                    { 
-                      model: SpOutcomeIndicatorTarget, 
-                      as: 'Targets', 
-                      where: { fy: currentFY }, 
-                      required: false 
-                    }
-                  ] 
-                },
-                {
-                  model: SpIntermediateOutcome,
-                  as: 'SelectedIntermediates',
-                  include: [
-                    { model: IntermediateOutcome, as: 'LibraryIntermediate' }, 
-                    { 
-                      model: SpIntermediateOutcomeIndicator, 
-                      as: 'SelectedIndicators',
-                      include: [
-                        { model: IntermediateOutcomeIndicator, as: 'LibraryIndicator' },
-                        { 
-                          model: SpIntermediateOutcomeIndicatorTarget, 
-                          as: 'Targets', 
-                          where: { fy: currentFY }, 
-                          required: false 
-                        }
-                      ]
-                    },
-                    {
-                      model: SpIntervention,
-                      as: 'SelectedInterventions',
-                      include: [{
-                        model: SpOutput,
-                        as: 'SelectedOutputs',
-                        include: [
-                          { model: Output, as: 'LibraryOutput' }, 
-                          { 
-                            model: SpOutputIndicator, 
-                            as: 'SelectedIndicators',
-                            include: [
-                              { model: OutputIndicator, as: 'LibraryIndicator' },
-                              { 
-                                model: SpOutputIndicatorTarget, 
-                                as: 'Targets', 
-                                where: { fy: currentFY }, 
-                                required: false 
-                              }
-                            ]
-                          },
-                          { 
-                            model: SpOutputAction, 
-                            as: 'SelectedActions',
-                            include: [
-                              { model: OutputAction, as: 'LibraryAction' },
-                              { 
-                                model: SpOutputActionBudget, 
-                                as: 'Budgets', 
-                                where: { fy: currentFY }, 
-                                required: false 
-                              }
-                            ] 
-                          }
-                        ]
-                      }]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    });
-
-
-    // 4. Convert to plain objects so Getters and Virtuals function correctly in Pug
-    const plainReport = report.get({ plain: true });
-    const plainPlan = plan ? plan.get({ plain: true }) : { SelectedObjectives: [] };
-    const isLocked = ['Submitted', 'Approved', 'Under Review'].includes(report.status);
     res.render('mda/reports/editor', {
-      title: `Performance Editor | ${report.Call ? report.Call.getName() : 'Quarterly Report'}`,
-      activePage: 'reports',
-      report: plainReport,
-      plan: plainPlan,
-      isLocked: isLocked,
-      user: req.user
+        ...data,
+        currentFY: data.report.Call.reportingYear,
+        isLocked: ['Submitted', 'Approved', 'Under Review'].includes(data.report.status),
+        user: req.user
     });
-
-  } catch (error) {
-    console.error('Editor Load Error:', error);
-    res.status(500).send('Error loading performance editor: ' + error.message);
-  }
 };
 
 /**

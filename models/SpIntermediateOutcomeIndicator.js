@@ -4,6 +4,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class SpIntermediateOutcomeIndicator extends Model {
     static associate(models) {
+      /**
+       * REVERTED: Join back using the Integer ID.
+       * This matches your current DB structure. The National data 
+       * will be fetched through this LibraryIndicator in the controller.
+       */
       if (models.IntermediateOutcomeIndicator) {
         this.belongsTo(models.IntermediateOutcomeIndicator, { 
           foreignKey: 'intermediateOutcomeIndicatorId', 
@@ -25,7 +30,6 @@ module.exports = (sequelize, DataTypes) => {
         });
       }
 
-      // NEW: Responsible Office Link
       if (models.Office) {
         this.belongsTo(models.Office, {
           foreignKey: 'responsibleOfficeId',
@@ -36,9 +40,16 @@ module.exports = (sequelize, DataTypes) => {
   }
 
   SpIntermediateOutcomeIndicator.init({
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    // REVERTED: Using the ID field that actually exists in your DB
     intermediateOutcomeIndicatorId: { 
       type: DataTypes.INTEGER, 
-      field: 'intermediate_outcome_indicator_id' 
+      field: 'intermediate_outcome_indicator_id',
+      allowNull: false
     },
     spIntermediateOutcomeId: { 
       type: DataTypes.INTEGER, 
@@ -64,18 +75,13 @@ module.exports = (sequelize, DataTypes) => {
       field: 'data_source',
       allowNull: true
     }
+    // REMOVED: indicatorCode (as it is not a column in this table)
   }, { 
     sequelize, 
     modelName: 'SpIntermediateOutcomeIndicator', 
     tableName: 'sp_intermediate_outcome_indicators', 
     underscored: true,
-    indexes: [
-      {
-        unique: true,
-        fields: ['plan_id', 'intermediate_outcome_indicator_id'],
-        name: 'unique_indicator_per_plan'
-      }
-    ]
+    timestamps: false
   });
 
   return SpIntermediateOutcomeIndicator;

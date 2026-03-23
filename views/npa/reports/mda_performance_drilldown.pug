@@ -1,0 +1,61 @@
+extends ../layout
+
+block npa_content
+  .container-fluid
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h3.fw-bold Performance Analysis: #{mda.name}
+        p.text-muted Period: #{call.reportingYear} #{call.quarter} | Plan: #{plan.title}
+      
+      .btn-group
+        button.btn.btn-outline-dark(onclick="window.print()") 
+          i.fas.fa-print.me-2
+          | Export Performance Brief
+
+    //- The Bottom-Up Hierarchy Tree
+    each obj in plan.SelectedObjectives
+      .card.border-0.shadow-sm.mb-4.overflow-hidden
+        .card-header.bg-dark.text-white.d-flex.justify-content-between.align-items-center.py-3
+          div
+            span.badge.bg-primary.me-2 Objective
+            span.fw-bold= obj.LibraryObjective.objective_code + ': ' + obj.LibraryObjective.name
+          //- Objective Achievement Score (Aggregated from below)
+          .h5.mb-0 #{obj.achievementPercentage}% Aligned
+
+        .card-body.p-0
+          each outcome in obj.SpOutcomes
+            .border-bottom.p-3.bg-light-subtle
+              .d-flex.justify-content-between
+                h6.fw-bold.text-primary
+                  i.fas.fa-bullseye.me-2
+                  | Outcome: #{outcome.Outcome.name}
+                span.badge.bg-info= outcome.achievementPercentage + '% Target Met'
+
+              //- THE INDICATOR TABLE (The Truth Layer)
+              .table-responsive.mt-2
+                table.table.table-sm.table-bordered.bg-white
+                  thead.table-light
+                    tr
+                      th Indicator
+                      th.text-center Unit
+                      th.text-center National Target
+                      th.text-center MDA Actual
+                      th.text-center Polarity
+                      th.text-center Gap/Score
+                  tbody
+                    each ind in outcome.SpOutcomeIndicators
+                      tr
+                        td.small= ind.OutcomeIndicator.name
+                        td.text-center.small= ind.OutcomeIndicator.unit_of_measure
+                        td.text-center.fw-bold= ind.targetValue
+                        td.text-center.text-primary.fw-bold= ind.reportedValue
+                        td.text-center
+                          if ind.Alignment.polarity === 'Incr'
+                            i.fas.fa-arrow-up.text-success(title="Higher is better")
+                          else if ind.Alignment.polarity === 'Decr'
+                            i.fas.fa-arrow-down.text-danger(title="Lower is better")
+                        td.text-center
+                          //- Logic: Traffic light colors based on that percentage
+                          - const score = ind.performanceScore
+                          span.badge(class=score >= 90 ? 'bg-success' : (score >= 50 ? 'bg-warning text-dark' : 'bg-danger'))
+                            | #{score}%

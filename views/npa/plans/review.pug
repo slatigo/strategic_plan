@@ -1,0 +1,86 @@
+extends ../layout
+
+block content
+  //- 1. NPA Environment Setup
+  - let isLocked = true
+  - let isPrintMode = false
+
+  link(href="/stylesheets/plan-editor.css" rel="stylesheet")
+  //- Pull in the same mixins used by the MDA
+  include ../../mda/plans/mixins/_plan_mixins.pug
+
+  .container-fluid.py-4
+    //- Header with MDA Identity
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        span.badge.bg-dark.mb-2 Submission Review
+        h2.mb-0= plan.Mda.name
+        p.text-muted Programme: #{plan.Programme ? plan.Programme.programmeName : 'Not Assigned'}
+      
+      .btn-group
+        a.btn.btn-outline-primary(href=`/npa/plans/view/${plan.id}?print=true` target="_blank")
+          i.fas.fa-print.me-2
+          | Print for Board Review
+
+    .row
+      //- LEFT COLUMN: The Shared Plan Content (75% width)
+      .col-lg-9
+        include ../../partials/_plan_readonly_core.pug
+
+      //- RIGHT COLUMN: The Reviewer Toolbox (25% width)
+      .col-lg-3
+        .card.shadow-sm.sticky-top(style="top: 20px; z-index: 1020;")
+          .card-header.bg-primary.text-white.py-3
+            h6.mb-0
+              i.fas.fa-clipboard-check.me-2
+              | Review Decision
+          
+          .card-body.p-0
+            //- 1. History / Comment Thread
+            .comment-thread.p-3(style="max-height: 400px; overflow-y: auto; background: #f8f9fa;")
+              label.x-small.text-uppercase.fw-bold.text-muted.mb-2 Activity Log
+              if plan.Comments && plan.Comments.length > 0
+                each comment in plan.Comments
+                  .comment-item.mb-3.pb-2.border-bottom
+                    .d-flex.justify-content-between.align-items-start
+                      small.fw-bold(class=comment.isAdminComment ? 'text-primary' : 'text-success')
+                        | #{comment.Author ? comment.Author.name : 'System'} 
+                      small.text-muted(style="font-size: 0.7rem;") 
+                        | #{new Date(comment.createdAt).toLocaleDateString()}
+                    p.small.mb-1.text-dark= comment.message
+                    if comment.statusAtTime
+                      span.badge(style="font-size: 0.65rem;" class=comment.statusAtTime === 'Approved' ? 'bg-success' : 'bg-warning text-dark')
+                        | #{comment.statusAtTime}
+              else
+                .text-center.py-4
+                  i.fas.fa-comments.text-muted.mb-2
+                  p.text-muted.small No remarks yet.
+
+            //- 2. Decision Input (Only if not already Approved)
+            if plan.status !== 'Approved'
+              .p-3.border-top.bg-white
+                label.small.fw-bold.mb-2 Add Remark / Feedback
+                textarea#remarks.form-control.form-control-sm.mb-3(rows="5" placeholder="Explain your decision or requested changes...")
+                
+                .d-grid.gap-2
+                  button.btn.btn-success(onclick="handleDecision('Approved')") 
+                    i.fas.fa-check-circle.me-2
+                    | Approve Plan
+                  button.btn.btn-warning(onclick="handleDecision('Pending Correction')")
+                    i.fas.fa-exclamation-triangle.me-2
+                    | Request Revision
+            else
+              .p-4.text-center.bg-light
+                .text-success.mb-2
+                  i.fas.fa-check-double.fa-3x
+                h6.fw-bold.text-success Plan Approved
+                p.small.text-muted.mb-0 Locked for implementation.
+
+block scripts
+  script.
+    window.planConfig = {
+      id: "#{plan.id}",
+      status: "#{plan.status}"
+    };
+  //- Load the Reviewer-specific JS logic
+  script(src="/js/npa/review-plan.js")

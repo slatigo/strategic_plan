@@ -1,0 +1,24 @@
+- const iEntry = (report.IntermediateEntries || []).find(e => e.spIntermediateOutcomeIndicatorId === iInd.id)
+- const libIInd = iInd.LibraryIndicator || {}
+- const iNat = libIInd.IntermediateNational
+- const iTargetObj = (iInd.Targets || []).find(t => t.fy === reportingFY)
+
+.row.g-2.mb-2.align-items-center
+  .col-md-4
+    span.x-small.text-muted.me-1 [#{libIInd.indicatorCode || 'N/A'}]
+    span.small.fw-bold #{libIInd.indicator}
+  .col-md-1.text-center
+    span.badge.bg-secondary.x-small #{iNat ? iNat.unit_of_measure : 'N/A'}
+  .col-md-2.text-center
+    span.badge.bg-light.text-muted.border.x-small Target: #{iTargetObj && iTargetObj.val ? Number(iTargetObj.val).toLocaleString() : '0'}
+  .col-md-2
+    input.form-control.form-control-sm.text-end.number-separator(
+      type="text" 
+      name=`intermediates[${iInd.id}][val]` 
+      value=(iEntry && iEntry.actualValue != null ? iEntry.actualValue.toLocaleString() : '')
+      oninput="formatNumber(this)"
+      readonly=isLocked
+
+    )
+    input(type="hidden" name=`intermediates[${iInd.id}][id]` value=iInd.id)
+  .col-md-3: input.form-control.form-control-sm(type="text" name=`intermediates[${iInd.id}][rem]` value=(iEntry ? iEntry.remarks : '') readonly=isLocked)

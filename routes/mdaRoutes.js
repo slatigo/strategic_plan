@@ -16,9 +16,12 @@ router.use(protect);
 router.use(restrictTo('mda_admin'));
 
 // --- 1. CORE VIEW ROUTES ---
+router.get('/plans',planController.getPlansLanding);
 router.get('/dashboard', plannerController.getDashboard);
 router.get('/plans/:id/edit', planController.getPlanEditor);
-
+router.get('/plans/view/:id', planController.getPlanEditor); // <--- Add this
+router.post('/plans/start', planController.startNewPlan);
+router.post('/plans/:id/submit-npa', planController.submitPlanToNPA);
 // --- 2. OBJECTIVE MANAGEMENT ---
 router.post('/plans/objectives/add', planController.addObjective);
 router.delete('/plans/objectives/:id', planController.removeObjective);

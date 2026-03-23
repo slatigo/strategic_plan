@@ -1,0 +1,52 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title #{plan.mdaName || 'Strategic Plan'} | Export
+    
+    //- Keep the same UI libraries for consistency
+    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet")
+    
+    style.
+      /* Print-Specific Optimizations */
+      body { 
+        background-color: #fff !important; 
+        font-family: 'Times New Roman', serif; /* More formal for gov docs */
+        font-size: 11pt; 
+      }
+      
+      /* Hide web-only elements */
+      .no-print { display: none !important; }
+      
+      /* Force high contrast for black/white printing */
+      .text-muted { color: #555 !important; }
+      .badge { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; }
+      
+      /* Prevent page breaks in the middle of a card or table */
+      .card, .outcome-box, tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      
+      @media print {
+        @page { margin: 1.5cm; }
+        .btn, .btn-group { display: none !important; }
+      }
+
+  body
+    //- Standard Government Header (Optional but Recommended)
+    .container.text-center.mb-5
+      img(src="/images/uganda-emblem.png" style="width: 80px; height: auto;" alt="Coat of Arms")
+      h4.text-uppercase.mb-0 The Republic of Uganda
+      h5.mb-0= plan.mdaName ? plan.mdaName.toUpperCase() : 'Ministry, Department or Agency'
+      hr.border-dark
+
+    //- This matches your 'block content' in plan-print.pug
+    .container-fluid
+      block content
+
+    //- Keep basic scripts
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
+    block scripts

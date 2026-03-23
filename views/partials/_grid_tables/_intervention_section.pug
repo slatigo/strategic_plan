@@ -1,0 +1,18 @@
+//- views/partials/_grid_tables/_intervention_section.pug
+- const invLib = inv.LibraryIntervention || {}
+.ms-3.mt-3
+  p.x-small.fw-bold.text-muted.mb-2 
+    i.fas.fa-chevron-right.me-1.text-success
+    | INTERVENTION: #{invLib.interventionCode} - #{invLib.intervention}
+
+  if inv.SelectedOutputs
+    each outp in inv.SelectedOutputs
+      - const outpLib = outp.LibraryOutput || {}
+      .output-item.p-3.bg-white.border.rounded.mb-3.shadow-sm
+        h6.small.fw-bold.text-primary.mb-3
+          i.fas.fa-caret-right.me-2
+          | OUTPUT: #{outpLib.outputCode} - #{outpLib.output}
+        
+        //- You can keep nesting or include the Action/Expenditure table here
+        if outp.SelectedActions
+           include ./_action_expenditure_table

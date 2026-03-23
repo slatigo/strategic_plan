@@ -1,0 +1,10 @@
+//- views/mda/plans/view_selector.pug
+
+if isPrintMode
+  extends ../../layout_print
+else
+  extends ../../layout
+
+block content
+  //- We call the block name used in your layouts (e.g., 'content' or 'mda_content')
+  include ./plan-editor-content.pug

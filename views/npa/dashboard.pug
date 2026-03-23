@@ -1,75 +1,126 @@
 extends ./layout
 
 block npa_content
-  //- Stats Row
-  //- Stats Row
+  //- 1. Top Header Row: Core System Metrics
   .row.g-4.mb-4
-  
-      .col-12.col-md-4
-        .card.border-0.shadow-sm.rounded-4
-          .card-body.p-4
-            .d-flex.align-items-center.justify-content-between
-              div
-                p.text-muted.small.fw-bold.text-uppercase.mb-1 Registered MDAs
-                h2.fw-bold.mb-0= stats ? stats.mdas : '0'
-              .p-3.bg-primary.bg-opacity-10.text-primary.rounded-3
-                i.fas.fa-building.fa-lg
-
-      //- Pending Submissions
-      .col-12.col-md-4
-        .card.border-0.shadow-sm.rounded-4
-          .card-body.p-4
-            .d-flex.align-items-center.justify-content-between
-              div
-                p.text-muted.small.fw-bold.text-uppercase.mb-1 Pending Submissions
-                h2.fw-bold.mb-0= stats ? stats.pending : '0'
-              .p-3.bg-warning.bg-opacity-10.text-warning.rounded-3
-                i.fas.fa-clock.fa-lg
-
-      //- System Administrators
-      .col-12.col-md-4
-        .card.border-0.shadow-sm.rounded-4
-          .card-body.p-4
-            .d-flex.align-items-center.justify-content-between
-              div
-                p.text-muted.small.fw-bold.text-uppercase.mb-1 System Admins
-                h2.fw-bold.mb-0= stats ? stats.admins : '1'
-              .p-3.bg-success.bg-opacity-10.text-success.rounded-3
-                i.fas.fa-user-shield.fa-lg
-    
-
-  //- Content Row
-  .row.g-4
-    // Recent Submissions Card
-    .col-12.col-lg-8
+    .col-12.col-md-3
       .card.border-0.shadow-sm.rounded-4
-        .card-header.bg-white.py-3.px-4.border-bottom-0.d-flex.justify-content-between.align-items-center
-          h5.fw-bold.text-dark.mb-0 Recent Submissions
-          a.btn.btn-sm.btn-link.text-decoration-none.fw-bold(href="/npa/submissions") View All
-        
-        .card-body.p-0
-          .table-responsive
-            table.table.table-hover.align-middle.mb-0
-              thead.table-light
-                tr
-                  th.ps-4.small.text-uppercase.text-muted MDA
-                  th.small.text-uppercase.text-muted Title
-                  th.small.text-uppercase.text-muted Date
-                  th.text-end.pe-4.small.text-uppercase.text-muted Status
-              tbody
-                //- Logic to loop through recent submissions would go here
-                tr
-                  td.ps-4.fw-medium Ministry of Health
-                  td Q3 Planning Report
-                  td.text-muted 12 Oct 2026
-                  td.text-end.pe-4
-                    span.badge.rounded-pill.bg-warning.text-dark Pending Review
-
-    // System Status Card (Optional sidebar content)
-    .col-12.col-lg-4
-      .card.border-0.shadow-sm.rounded-4.bg-primary.text-white
         .card-body.p-4
-          h5.fw-bold.mb-3 Quick Tips
-          p.small.opacity-75 Ensure all MDA Short Codes are unique before registering a new entity to avoid conflicts in reporting.
-          hr.opacity-25
-          a.btn.btn-light.btn-sm.fw-bold.w-100(href="/npa/mda") Manage MDAs
+          .d-flex.align-items-center.justify-content-between
+            div
+              p.text-muted.small.fw-bold.text-uppercase.mb-1 Total MDAs
+              h2.fw-bold.mb-0= stats.mdas
+            .p-3.bg-primary.bg-opacity-10.text-primary.rounded-3
+              i.fas.fa-landmark.fa-lg
+
+    .col-12.col-md-3
+      .card.border-0.shadow-sm.rounded-4
+        .card-body.p-4
+          .d-flex.align-items-center.justify-content-between
+            div
+              p.text-muted.small.fw-bold.text-uppercase.mb-1 Review Inbox
+              h2.fw-bold.mb-0.text-warning= stats.totalInbox
+            .p-3.bg-warning.bg-opacity-10.text-warning.rounded-3
+              i.fas.fa-envelope-open-text.fa-lg
+
+    .col-12.col-md-3
+      .card.border-0.shadow-sm.rounded-4
+        .card-body.p-4
+          .d-flex.align-items-center.justify-content-between
+            div
+              p.text-muted.small.fw-bold.text-uppercase.mb-1 Active Plans
+              h2.fw-bold.mb-0.text-success= stats.plans.approved
+            .p-3.bg-success.bg-opacity-10.text-success.rounded-3
+              i.fas.fa-check-double.fa-lg
+
+    .col-12.col-md-3
+      .card.border-0.shadow-sm.rounded-4
+        .card-body.p-4
+          .d-flex.align-items-center.justify-content-between
+            div
+              p.text-muted.small.fw-bold.text-uppercase.mb-1 Revisions
+              h2.fw-bold.mb-0.text-danger= (stats.plans.revision + stats.reports.revision)
+            .p-3.bg-danger.bg-opacity-10.text-danger.rounded-3
+              i.fas.fa-exclamation-circle.fa-lg
+
+  //- 2. Main Content: Comparison of Plans vs Reports
+  .row.g-4
+    //- Strategic Plans Card
+    .col-12.col-lg-6
+      .card.border-0.shadow-sm.rounded-4.h-100
+        .card-header.bg-white.py-3.px-4.border-0
+          h5.fw-bold.text-dark.mb-0 
+            i.fas.fa-file-signature.me-2.text-primary
+            | Strategic Planning Status
+        .card-body.px-4.pb-4
+          .table-responsive
+            table.table.table-hover.align-middle
+              tbody
+                tr
+                  td: span.text-muted Drafts / Not Started
+                  td.text-end.fw-bold= stats.plans.draft
+                tr
+                  td: span.text-warning Awaiting NPA Approval
+                  td.text-end.fw-bold
+                    span.badge.bg-warning.text-dark= stats.plans.submitted
+                tr
+                  td: span.text-success Approved & Active
+                  td.text-end.fw-bold= stats.plans.approved
+                tr
+                  td: span.text-danger Needs Revision
+                  td.text-end.fw-bold= stats.plans.revision
+          hr
+          a.btn.btn-light.w-100.fw-bold.text-primary(href="/npa/plan-calls") 
+            | Manage Plan Calls
+            i.fas.fa-arrow-right.ms-2
+
+    //- Progress Reports Card
+    .col-12.col-lg-6
+      .card.border-0.shadow-sm.rounded-4.h-100
+        .card-header.bg-white.py-3.px-4.border-0
+          h5.fw-bold.text-dark.mb-0 
+            i.fas.fa-tasks.me-2.text-info
+            | Quarterly Progress Reports
+        .card-body.px-4.pb-4
+          .table-responsive
+            table.table.table-hover.align-middle
+              tbody
+                tr
+                  td: span.text-muted In-Progress (Drafts)
+                  td.text-end.fw-bold= stats.reports.draft
+                tr
+                  td: span.text-warning Submitted for Review
+                  td.text-end.fw-bold
+                    span.badge.bg-info.text-white= stats.reports.submitted
+                tr
+                  td: span.text-success Finalized / Verified
+                  td.text-end.fw-bold= stats.reports.approved
+                tr
+                  td: span.text-danger Sent Back (Revision)
+                  td.text-end.fw-bold= stats.reports.revision
+          hr
+          a.btn.btn-light.w-100.fw-bold.text-info(href="/npa/report-calls") 
+            | Manage Report Calls
+            i.fas.fa-arrow-right.ms-2
+
+  //- 3. System Configuration Quick Links
+  .row.mt-4
+    .col-12
+      .card.bg-dark.text-white.border-0.shadow-sm.rounded-4
+        .card-body.p-4.d-flex.justify-content-between.align-items-center
+          div
+            h5.fw-bold.mb-1 System Administration
+            p.small.mb-0.opacity-75 Manage user roles, register new MDAs, and configure reporting cycles.
+          .btn-group
+            a.btn.btn-outline-light.btn-sm(href="/npa/mda") 
+              i.fas.fa-building.me-2
+              | MDAs
+            a.btn.btn-outline-light.btn-sm(href="/npa/users") 
+              i.fas.fa-users-cog.me-2
+              | Users
+            a.btn.btn-outline-light.btn-sm(href="/npa/settings") 
+              i.fas.fa-cog.me-2
+              | Settings
+
+block scripts
+  //- If you want to add Chart.js later, this is where it goes

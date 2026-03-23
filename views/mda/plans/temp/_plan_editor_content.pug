@@ -1,0 +1,218 @@
+
+link(href="/stylesheets/plan-editor.css" rel="stylesheet")
+include ./mixins/_plan_mixins.pug
+input#global_plan_id(type="hidden" value=plan.id)
+
+.container-fluid.py-4
+  //- Unified Header Section
+  .d-flex.justify-content-between.align-items-center.mb-4.no-print
+    div
+      h2.mb-0 
+        if isPrintMode
+          i.fas.fa-file-invoice.me-2.text-primary
+          | Strategic Plan Report
+        else if isLocked
+          i.fas.fa-lock.me-2.text-muted
+          | Strategic Plan (View Mode)
+        else
+          | Strategic Plan Setup
+      p.text-muted Programme: #{plan.Programme ? plan.Programme.programmeName : 'Not Assigned'}
+    
+    .btn-group
+      if isPrintMode
+        //- Print Mode: Only show the "Confirm Print" trigger
+        button.btn.btn-dark(onclick="window.print()") 
+          i.fas.fa-print.me-2
+          | Confirm Print
+      else
+        //- Edit/View Mode: Show Generate Report AND Add Objective (if unlocked)
+        a.btn.btn-outline-primary(href=`/mda/plans/view/${plan.id}?print=true` target="_blank")
+          i.fas.fa-file-pdf.me-2
+          | Generate Report
+        
+        if !isLocked
+          button.btn.btn-primary.ms-2(data-bs-toggle="modal" data-bs-target="#addObjectiveModal") 
+            i.fas.fa-plus.me-2
+            | Add Objective
+
+  if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
+    each obj in plan.SelectedObjectives
+      .card.shadow-sm.mb-5.border-start.border-4.border-primary
+        .card-header.bg-white.py-3
+          .row.align-items-center
+            .col
+              span.badge.bg-primary.mb-2 Objective #{obj.LibraryObjective.objectiveCode}
+              h5.card-title.mb-0 #{obj.orgObjective}
+            .col-auto
+              if !isLocked
+                button.btn.btn-sm.btn-success(onclick=`prepareOutcomeModal(${obj.id}, ${obj.LibraryObjective.id}, "${obj.orgObjective}")`)
+                  i.fas.fa-plus.me-1
+                  | Add Outcome
+
+        .card-body.p-4
+          if obj.SelectedOutcomes && obj.SelectedOutcomes.length > 0
+            each oc in obj.SelectedOutcomes
+              .outcome-box.mb-5.p-0.bg-white.rounded.border.shadow-sm
+                .card-header.bg-light.border-bottom.py-3
+                  .d-flex.justify-content-between.align-items-center
+                    div
+                      span.badge.bg-info.text-dark.mb-1 OUTCOME: #{oc.LibraryOutcome.outcomeCode}
+                      h6.fw-bold.mb-0= oc.LibraryOutcome.outcomeName
+                    if !isLocked
+                      .btn-group
+                        button.btn.btn-xs.btn-outline-primary(onclick=`prepareIndicatorModal('Outcome', ${oc.id})`) 
+                          i.fas.fa-chart-line.me-1
+                          | + Ind
+                        button.btn.btn-xs.btn-outline-info(onclick=`prepareIntermediateModal(${oc.id})`) 
+                          i.fas.fa-sitemap.me-1
+                          | + Int. Outcome
+                        button.btn.btn-xs.btn-outline-danger(onclick=`removeOutcome(${oc.id})`)
+                          i.fas.fa-trash
+
+                .card-body.position-relative.pb-4
+                  div(style="position:absolute; left:20px; top:0; bottom:0; width:2px; background:#e9ecef; z-index:0;")
+
+                  //- 1. OUTCOME INDICATORS (Pass isLocked to mixin)
+                  if oc.SelectedIndicators && oc.SelectedIndicators.length > 0
+                    .ms-4.mb-4.position-relative(style="z-index:1")
+                      h6.text-uppercase.x-small.fw-bold.text-muted.mb-3 Performance Indicators (Outcome)
+                      each ind in oc.SelectedIndicators
+                        +indicatorRow(ind, 'Outcome', years, isLocked)
+
+                  //- 2. INTERMEDIATE OUTCOMES
+                  if oc.SelectedIntermediates && oc.SelectedIntermediates.length > 0
+                    .ms-4.position-relative(style="z-index:1")
+                      h6.text-uppercase.x-small.fw-bold.text-muted.mb-3 Intermediate Outcomes
+                      each io in oc.SelectedIntermediates
+                        .intermediate-item.ps-3.mb-4.border-start.border-3.border-info
+                          .d-flex.justify-content-between.align-items-start
+                            div
+                              small.text-info.fw-bold.x-small= io.LibraryIntermediate.intermediateOutcomeCode
+                              h6.mb-1.small.fw-bold= io.LibraryIntermediate.intermediateOutcome
+                            if !isLocked
+                              .btn-group
+                                button.btn.btn-link.btn-sm.text-info.p-0.me-2(onclick=`prepareIndicatorModal('Intermediate', ${io.id})`) 
+                                  i.fas.fa-chart-bar
+                                button.btn.btn-link.btn-sm.text-success.p-0(onclick=`prepareInterventionModal(${io.id})`) 
+                                  i.fas.fa-plus-circle
+                                button.btn.btn-link.btn-sm.text-danger.p-0.ms-2(onclick=`removeIntermediate(${io.id})`)
+                                  i.fas.fa-times
+
+                          //- 2.1 INTERMEDIATE INDICATORS
+                          if io.SelectedIndicators && io.SelectedIndicators.length > 0
+                            .ms-3.mt-2.mb-3
+                              each iInd in io.SelectedIndicators
+                                +indicatorRow(iInd, 'Intermediate', years, isLocked)
+
+                          //- 3. INTERVENTIONS & OUTPUTS
+                          if io.SelectedInterventions && io.SelectedInterventions.length > 0
+                            .ms-3.mt-3
+                              each inv in io.SelectedInterventions
+                                .intervention-card.p-3.bg-light.border.rounded.mb-3
+                                  .d-flex.justify-content-between
+                                    h6.small.fw-bold.text-success INTERVENTION: #{inv.LibraryIntervention.interventionCode}
+                                    if !isLocked
+                                      .btn-group
+                                        button.btn.btn-xs.btn-outline-success(onclick=`prepareOutputModal(${inv.id})`)
+                                          i.fas.fa-plus.me-1
+                                          | + Output
+                                        button.btn.btn-xs.btn-outline-danger.ms-2(onclick=`removeIntervention(${inv.id})`)
+                                          i.fas.fa-trash
+                                  p.small.mb-2= inv.LibraryIntervention.intervention
+
+                                  //- 4. OUTPUTS
+                                  if inv.SelectedOutputs && inv.SelectedOutputs.length > 0
+                                    .mt-3
+                                      each outp in inv.SelectedOutputs
+                                        .output-item.p-3.bg-white.border.rounded.mb-3.shadow-sm
+                                          .d-flex.justify-content-between.align-items-center.mb-2
+                                            h6.small.fw-bold.text-primary.mb-0 
+                                              i.fas.fa-caret-right.me-2
+                                              | OUTPUT: #{outp.LibraryOutput.output_code || outp.LibraryOutput.outputCode} - #{outp.LibraryOutput.output}
+                                            if !isLocked
+                                              .btn-group
+                                                button.btn.btn-link.btn-xs.text-primary.p-0(onclick=`prepareIndicatorModal('Output', ${outp.id})`)
+                                                  i.fas.fa-chart-pie.me-1
+                                                  | + Ind.
+                                                button.btn.btn-link.btn-xs.text-warning.p-0.ms-2(onclick=`prepareActionModal(${outp.id})`)
+                                                  i.fas.fa-tasks.me-1
+                                                  | + Action
+                                                button.btn.btn-link.btn-xs.text-danger.p-0.ms-2(onclick=`deleteOutput(${outp.id})`)
+                                                  i.fas.fa-times
+
+                                          //- 4.1 OUTPUT INDICATORS
+                                          if outp.SelectedIndicators && outp.SelectedIndicators.length > 0
+                                            .ms-3.mb-3
+                                              each opInd in outp.SelectedIndicators
+                                                +indicatorRow(opInd, 'Output', years, isLocked)
+
+                                          //- 4.2 OUTPUT ACTIONS & BUDGETS
+                                          if outp.SelectedActions && outp.SelectedActions.length > 0
+                                            .ms-4.mt-2
+                                              .table-responsive.border-start.border-4.border-light
+                                                table.table.table-sm.table-hover.align-middle.mb-0
+                                                  thead.bg-light
+                                                    tr
+                                                      th.ps-3.x-small.text-muted(style="width: 45%") ACTION / ACTIVITY
+                                                      each y in years
+                                                        th.x-small.text-muted.text-end.pe-3= y
+                                                      if !isLocked
+                                                        th.x-small.text-muted.text-end(style="width: 80px") ACTIONS
+                                                  tbody
+                                                    each act in outp.SelectedActions
+                                                      tr
+                                                        td.ps-3.py-2
+                                                          span.text-muted.x-small.fw-bold.me-2(style="min-width: 50px;")= act.LibraryAction.actionCode || 'N/A'
+                                                          p.mb-1.small.fw-bold.text-dark= act.adaptedOutputAction || act.LibraryAction.action
+                                                          .d-flex.flex-wrap.gap-2.align-items-center
+                                                            span.text-secondary.x-small
+                                                              i.fas.fa-university.me-1
+                                                              | #{act.ResponsibleOffice ? act.ResponsibleOffice.name : 'Unassigned'}
+                                                        each y in years
+                                                          td.text-end.pe-3
+                                                            - const bVal = act.Budgets ? act.Budgets.find(b => b.fy == y) : null
+                                                            span.small.font-monospace(class=bVal ? 'fw-bold text-dark' : 'text-muted')
+                                                              | #{bVal ? 'UGX ' + Number(bVal.val).toLocaleString() : '-'}
+                                                        if !isLocked
+                                                          td.text-end
+                                                            .btn-group
+                                                              button.btn.btn-link.btn-xs.text-warning.p-1(onclick=`prepareActionModal(${outp.id}, ${JSON.stringify(act)})` title="Edit")
+                                                                i.fas.fa-pencil-alt
+                                                              button.btn.btn-link.btn-xs.text-danger.p-1(onclick=`deleteAction(${act.id})` title="Delete")
+                                                                i.fas.fa-trash-alt
+
+//- 5. Conditional Footer Section
+hr.my-5
+if !isLocked
+  .submission-section.bg-light.p-4.rounded.border.text-center.mb-5
+    h5 Ready to Finalize?
+    p.text-muted.small 
+      | Submitting this Strategic Plan will notify the 
+      strong National Planning Authority (NPA) 
+      | for review. You will not be able to edit targets once submitted.
+    .d-flex.justify-content-center.gap-3.mt-3
+      a.btn.btn-outline-secondary(href="/mda/plans")
+        i.fas.fa-chevron-left.me-1
+        | Return to Dashboard
+      button.btn.btn-primary.btn-lg.px-5(type="button" onclick=`submitToNPA(${plan.id})`)
+        i.fas.fa-paper-plane.me-2
+        | Submit to NPA
+else
+  .text-center.mb-5
+    a.btn.btn-secondary.px-5(href="/mda/plans")
+      i.fas.fa-arrow-left.me-2
+      | Return to Dashboard
+
+//- Only include Modals if NOT locked (saves DOM weight)
+if !isLocked
+  include ./modals/add_objective_modal.pug
+  include ./modals/add_outcome_modal.pug
+  include ./modals/add_indicator_modal.pug
+  include ./modals/add_intermediate_modal.pug
+  include ./modals/add_int_indicator_modal.pug
+  include ./modals/add_intervention_modal.pug
+  include ./modals/add_output_modal.pug
+  include ./modals/add_output_indicator_modal.pug
+  include ./modals/add_output_action_modal.pug
+
+script(src="/js/mda/plan-editor.js")

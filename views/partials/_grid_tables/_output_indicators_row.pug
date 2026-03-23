@@ -1,0 +1,24 @@
+//- views/partials/_grid_tables/_output_indicators_row.pug
+- const oEntry = (report.OutputEntries || []).find(e => e.spOutputIndicatorId === oInd.id)
+- const libOInd = oInd.LibraryIndicator || {}
+- const oNat = libOInd.OutputNational
+- const oTargetObj = (oInd.Targets || []).find(t => t.fy === reportingFY)
+
+.row.g-2.mb-1.align-items-center
+  .col-md-4
+    span.x-small.text-muted.me-1 [#{libOInd.indicatorCode || 'N/A'}]
+    span.x-small.fw-bold #{libOInd.indicator}
+  .col-md-1.text-center
+    span.badge.bg-secondary.x-small #{oNat ? oNat.unit_of_measure : 'N/A'}
+  .col-md-2.text-center
+    span.badge.bg-light.text-primary.border.x-small Target: #{oTargetObj && oTargetObj.val ? Number(oTargetObj.val).toLocaleString() : '0'}
+  .col-md-2
+    input.form-control.form-control-sm.text-end.number-separator(
+      type="text" 
+      name=`outputs[${oInd.id}][val]` 
+      value=(oEntry && oEntry.actualValue != null ? oEntry.actualValue.toLocaleString() : '')
+      oninput="formatNumber(this)"
+      readonly=isLocked
+    )
+    input(type="hidden" name=`outputs[${oInd.id}][id]` value=oInd.id)
+  .col-md-3: input.form-control.form-control-sm(type="text" name=`outputs[${oInd.id}][rem]` value=(oEntry ? oEntry.remarks : '') readonly=isLocked)

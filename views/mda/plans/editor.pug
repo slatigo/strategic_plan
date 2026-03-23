@@ -1,0 +1,91 @@
+extends ../layout
+
+block mda_content
+  - let isLocked = plan.status !== 'Draft' && plan.status !== 'Pending Correction'
+  - let isPrintMode = false
+
+  link(href="/stylesheets/plan-editor.css" rel="stylesheet")
+  include ./mixins/_plan_mixins.pug
+  
+  input#global_plan_id(type="hidden" value=plan.id)
+
+  .container-fluid.py-4
+    .d-flex.justify-content-between.align-items-center.mb-4.no-print
+      div
+        h2.mb-0 
+          if isLocked
+            i.fas.fa-lock.me-2.text-muted
+            | Strategic Plan (View Mode)
+          else
+            i.fas.fa-edit.me-2.text-primary
+            | Strategic Plan Editor
+        p.text-muted Programme: #{plan.Programme ? plan.Programme.programmeName : 'Not Assigned'}
+      
+      .btn-group
+        a.btn.btn-outline-primary(href=`/mda/plans/view/${plan.id}?print=true` target="_blank")
+          i.fas.fa-file-pdf.me-2
+          | Generate Report
+        if !isLocked
+          button.btn.btn-primary.ms-2(data-bs-toggle="modal" data-bs-target="#addObjectiveModal") 
+            i.fas.fa-plus.me-2
+            | Add Objective
+
+    .row
+      //- Column 1: The Plan Content (Left Side)
+      div(class=(plan.Comments && plan.Comments.length > 0) ? 'col-lg-9' : 'col-lg-12')
+        include ../../partials/_plan_readonly_core.pug
+
+        //- MDA Footer (Submission Logic)
+        hr.my-5
+        if !isLocked
+          .submission-section.bg-light.p-5.rounded.border.text-center.mb-5.shadow-sm
+            i.fas.fa-paper-plane.fa-3x.text-primary.mb-3
+            h4 Ready to Finalize?
+            p.text-muted 
+              | Submitting this Strategic Plan will notify the 
+              strong National Planning Authority (NPA) 
+              | for review.
+            .d-flex.justify-content-center.gap-3.mt-4
+              button.btn.btn-primary.btn-lg.px-5(type="button" onclick=`submitToNPA(${plan.id})`)
+                | Submit to NPA for Review
+        else
+          .text-center.mb-5
+            .alert.alert-info.d-inline-block.px-5
+              i.fas.fa-info-circle.me-2
+              | This plan is currently **#{plan.status}** and is locked.
+
+      //- Column 2: The Remarks Sidebar (Right Side - Only shows if comments exist)
+      if plan.Comments && plan.Comments.length > 0
+        .col-lg-3
+          .card.shadow-sm.sticky-top(style="top: 20px;")
+            .card-header.bg-info.text-white
+              i.fas.fa-comment-dots.me-2
+              | NPA Feedback & History
+            .card-body.p-0
+              .comment-thread.p-3(style="max-height: 600px; overflow-y: auto; background: #f8f9fa;")
+                each comment in plan.Comments
+                  .comment-item.mb-3.pb-2.border-bottom
+                    .d-flex.justify-content-between.align-items-start
+                      small.fw-bold(class=comment.isAdminComment ? 'text-primary' : 'text-success')
+                        | #{comment.Author ? comment.Author.name : 'System'}
+                      small.text-muted(style="font-size: 0.7rem;") 
+                        | #{new Date(comment.createdAt).toLocaleDateString()}
+                    p.small.mb-1.text-dark= comment.message
+                    if comment.statusAtTime
+                      span.badge(style="font-size: 0.65rem;" class=comment.statusAtTime === 'Approved' ? 'bg-success' : 'bg-warning text-dark')
+                        | #{comment.statusAtTime}
+
+  if !isLocked
+    include ./modals/add_objective_modal.pug
+    include ./modals/add_outcome_modal.pug
+    include ./modals/add_indicator_modal.pug
+    include ./modals/add_intermediate_modal.pug
+    include ./modals/add_intervention_modal.pug
+    include ./modals/add_output_modal.pug
+    include ./modals/add_output_indicator_modal.pug
+    include ./modals/add_output_action_modal.pug
+
+block scripts
+  script.
+    window.planId = "#{plan.id}";
+  script(src="/js/mda/plan-editor.js")

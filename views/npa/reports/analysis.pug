@@ -1,0 +1,104 @@
+extends ../layout
+
+block npa_content
+  .container-fluid
+    .d-flex.justify-content-between.align-items-start.mb-4
+      div
+        h3.fw-bold National Performance Analysis
+        p.text-muted 
+          | Period: FY #{snapshot.reportingYear} #{snapshot.quarter} | 
+          span.badge.bg-soft-success.text-success #{stats.totalMdas} MDAs Reporting
+      
+      //- THE SEARCH TOOL
+      .search-box(style="width: 400px;")
+        .input-group.shadow-sm
+          span.input-group-text.bg-white: i.fas.fa-search
+          input#indicatorSearch.form-control(type="text" placeholder="Search by name or code..." onkeyup="filterIndicators()")
+
+    //- High Level National Scorecard
+    .row.g-3.mb-4
+      .col-md-4
+        .card.border-0.shadow-sm.bg-dark.text-white
+          .card-body.text-center
+            h6.small.text-uppercase.text-light Overall National Achievement
+            h2.fw-bold.mb-0 #{stats.overallAchievement}%
+            small.text-muted Based on #{stats.indicatorCount} active indicators
+
+    //- Dynamic Sections Helper Function
+    mixin indicatorSection(items, title, badgeClass)
+      if items && items.length > 0
+        h5.fw-bold.mt-5.mb-3= title
+        each item in items
+          //- Data attributes updated to match controller mapping
+          .card.border-0.shadow-sm.mb-4.indicator-card(
+              data-indicator=(item.name ? item.name.toLowerCase() : 'unknown') 
+              data-code=(item.Indicator.LibraryIndicator.indicatorCode ? item.Indicator.LibraryIndicator.indicatorCode.toLowerCase() : 'n/a')
+            )
+            .card-header.bg-white.py-3.border-bottom
+              .d-flex.justify-content-between.align-items-center
+                div
+                  span.badge.me-2(class=badgeClass)= title.split(' ') + ' Indicator'
+                  span.fw-bold= item.name
+                  small.text-muted.ms-2 [#{item.Indicator.LibraryIndicator.indicatorCode}]
+                .text-end
+                  span.h5.mb-0(class=item.achievement >= 90 ? 'text-success' : (item.achievement >= 50 ? 'text-warning' : 'text-danger')) #{item.achievement}%
+            
+            .card-body.p-0
+              .table-responsive
+                table.table.table-hover.align-middle.mb-0
+                  thead.table-light
+                    tr
+                      th.px-4 Scope
+                      th.text-center Target (FY #{snapshot.reportingYear})
+                      th.text-center National Avg Actual
+                      th.text-center Polarity
+                      th.text-center Status
+                  tbody
+                    tr
+                      td.px-4 Aggregate of #{item.mdaCount} MDAs
+                      td.text-center.fw-bold #{item.target} #{item.unit}
+                      td.text-center.text-primary.fw-bold #{item.actual.toLocaleString()} #{item.unit}
+                      td.text-center
+                        if item.polarity === 'Incr'
+                          span.text-success: i.fas.fa-arrow-trend-up
+                          small.d-block.text-muted Higher is Better
+                        else
+                          span.text-danger: i.fas.fa-arrow-trend-down
+                          small.d-block.text-muted Lower is Better
+                      td.text-center
+                        span.badge(class=item.achievement >= 90 ? 'bg-success' : (item.achievement >= 50 ? 'bg-warning' : 'bg-danger'))
+                          = item.achievement >= 90 ? 'On Track' : (item.achievement >= 50 ? 'Under-performing' : 'Critical')
+
+    //- Render the 3 levels
+    +indicatorSection(outcomes, 'Outcome Indicators', 'bg-primary-subtle text-primary')
+    +indicatorSection(intermediates, 'Intermediate Outcome Indicators', 'bg-info-subtle text-info')
+    +indicatorSection(outputs, 'Output Indicators', 'bg-secondary-subtle text-secondary')
+
+    //- JavaScript for the Live Search Tool
+    script.
+      function filterIndicators() {
+        let input = document.getElementById('indicatorSearch').value.toLowerCase();
+        let cards = document.getElementsByClassName('indicator-card');
+        
+        for (let card of cards) {
+          let text = card.getAttribute('data-indicator') || "";
+          let code = card.getAttribute('data-code') || "";
+          
+          if (text.includes(input) || code.includes(input)) {
+            card.style.display = "";
+          } else {
+            card.style.display = "none";
+          }
+        }
+      }
+      async function loadBreakdown(id, type) {
+          const response = await fetch(`/analysis/breakdown?indicatorId=${id}&type=${type}`);
+          const data = await response.json();
+          
+          // Inject the data into a single shared Modal on the page
+          let html = data.map(m => `<tr><td>${m.ParentReport.Mda.name}</td><td>${m.actualValue}</td></tr>`).join('');
+          document.getElementById('modalTableBody').innerHTML = html;
+          
+          const myModal = new bootstrap.Modal(document.getElementById('breakdownModal'));
+          myModal.show();
+      }

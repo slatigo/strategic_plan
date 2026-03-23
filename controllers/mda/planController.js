@@ -1,154 +1,193 @@
 const { 
-    StrategicPlan, PlanCall, Programme, SpObjective, Objective, 
-    SpOutcome, Outcome, SpOutcomeIndicator, OutcomeIndicator, 
-    SpOutcomeIndicatorTarget, SpIntermediateOutcome, IntermediateOutcome, 
-    SpIntermediateOutcomeIndicator, IntermediateOutcomeIndicator, 
-    SpIntermediateOutcomeIndicatorTarget, SpIntervention, Intervention, 
-    SpOutput, Output, SpOutputIndicator, OutputIndicator, 
-    SpOutputIndicatorTarget, SpOutputAction, OutputAction, 
-    SpOutputActionBudget, Office, BudgetSource,sequelize
-} = require('../../models');
+    // 1. Core Models
+    StrategicPlan, 
+    Mda, 
+    PlanCall, 
+    Programme, 
+    Office, 
+    BudgetSource,
+    NationalAlignment,
+    NationalValue,
 
+    // 2. Strategic Plan (SP) Instances (The MDA's specific selections)
+    SpObjective, 
+    SpOutcome, 
+    SpOutcomeIndicator, 
+    SpOutcomeIndicatorTarget, 
+    SpIntermediateOutcome, 
+    SpIntermediateOutcomeIndicator, 
+    SpIntermediateOutcomeIndicatorTarget, 
+    SpIntervention, 
+    SpOutput, 
+    SpOutputIndicator, 
+    SpOutputIndicatorTarget, 
+    SpOutputAction, 
+    SpOutputActionBudget,
+
+    // 3. Library Models (The global templates/base definitions)
+    Objective, 
+    Outcome, 
+    OutcomeIndicator, 
+    IntermediateOutcome, 
+    IntermediateOutcomeIndicator, 
+    Intervention, 
+    Output, 
+    OutputIndicator, 
+    OutputAction,
+    PlanComment,
+    User,
+
+    // 4. Utilities
+    Sequelize 
+} = require('../../models'); // Adjust path based on your file's location
+
+const { fullPlanStructure } = require('../../utils/planIncludes');
 const { Op } = require('sequelize');
+const AppError = require('../../utils/appError');
+exports.getPlansLanding = async (req, res) => {
+  try {
+    const mdaId = req.user.mdaId;
+
+    // 1. Fetch all plans for this MDA
+    const plans = await StrategicPlan.findAll({
+      where: { mdaId: mdaId },
+      include: [
+        { model: PlanCall, as: 'Call' },
+        { model: Programme, as: 'Programme' }
+      ],
+      order: [['recorded', 'DESC']]
+    });
+
+    // 2. Check if there's an open "Call" for a new plan (Optional logic)
+    const openCalls = await PlanCall.findAll({ where: { status: 'Open' } });
+
+    res.render('mda/plans/index', {
+      title: 'Strategic Plans Management',
+      activePage: 'plans',
+      plans: plans.map(p => p.get({ plain: true })),
+      openCalls: openCalls,
+      user: req.user
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error loading plans');
+  }
+};
+exports.startNewPlan = async (req, res) => {
+    try {
+        const { call_id, programme_id } = req.body;
+        const mda_id = req.user.mdaId; // From middleware
+        const user_id = req.user.id;
+
+        // 1. Double check existence using the Model Property Names
+        const existing = await StrategicPlan.findOne({ 
+            where: { 
+                callId: call_id,  // Use camelCase from model
+                mdaId: mda_id     // Changed from org_id
+            } 
+        });
+
+        if (existing) {
+            return res.status(400).json({ 
+                status: 'fail', 
+                message: 'A plan for this fiscal year has already been initiated.' 
+            });
+        }
+
+        // 2. Create the Record using the Model Property Names
+        const newPlan = await StrategicPlan.create({
+            callId: call_id,      // Use camelCase
+            mdaId: mda_id,        // Changed from org_id
+            userId: user_id,      // Use camelCase
+            programmeId: programme_id, 
+            status: 'Draft',
+            recorded: new Date()
+        });
+
+        res.status(201).json({ 
+            status: 'success', 
+            planId: newPlan.id 
+        });
+
+    } catch (error) {
+        console.error("Start Plan Error:", error);
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+};
+
 
 exports.getPlanEditor = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Fetch lookup tables for the dropdowns
-        const offices = await Office.findAll({ 
-                where: { mdaId: req.user.mdaId },
+        // 1. Fetch lookup tables and Plan in parallel
+        // We use the fullPlanStructure utility here
+        const [offices, budgetSources, plan] = await Promise.all([
+            Office.findAll({ 
+                where: { mdaId: req.user.mdaId }, 
                 order: [['name', 'ASC']] 
-        });
-        const budgetSources = await BudgetSource.findAll({ 
-            where: { mdaId: req.user.mdaId },
-            order: [['name', 'ASC']] 
-        });
-        const check = {
-            PlanCall, Programme, SpObjective, Objective, SpOutcome, Outcome, 
-            SpOutcomeIndicator, OutcomeIndicator, SpOutcomeIndicatorTarget,
-            SpIntermediateOutcome, IntermediateOutcome, SpIntermediateOutcomeIndicator, 
-            IntermediateOutcomeIndicator, SpIntermediateOutcomeIndicatorTarget,
-            SpIntervention, Intervention, SpOutput, Output, SpOutputIndicator, 
-            OutputIndicator, SpOutputIndicatorTarget, SpOutputAction, OutputAction, 
-            SpOutputActionBudget, Office, BudgetSource
-        };
-
-        Object.entries(check).forEach(([name, model]) => {
-            if (!model) console.error(`🚨 UNDEFINED MODEL FOUND: ${name}`);
-        });
-        const plan = await StrategicPlan.findByPk(id, {
-            include: [
-                { model: PlanCall, as: 'Call' },
-                { model: Programme, as: 'Programme' },
-                { 
-                    model: SpObjective, 
-                    as: 'SelectedObjectives',
-                    include: [
-                        { model: Objective, as: 'LibraryObjective' },
-                        { 
-                            model: SpOutcome, 
-                            as: 'SelectedOutcomes',
+            }),
+            BudgetSource.findAll({ 
+                where: { mdaId: req.user.mdaId }, 
+                order: [['name', 'ASC']] 
+            }),
+            StrategicPlan.findByPk(id, {
+                include: [...fullPlanStructure,
+                            {
+                            model: PlanComment, // Add the Comments model here
+                            as: 'Comments',
                             include: [
-                                { model: Outcome, as: 'LibraryOutcome' },
                                 { 
-                                    model: SpOutcomeIndicator, 
-                                    as: 'SelectedIndicators', 
-                                    include: [
-                                        { model: OutcomeIndicator, as: 'LibraryIndicator' }, 
-                                        { model: SpOutcomeIndicatorTarget, as: 'Targets' },
-                                        { model: Office, as: 'ResponsibleOffice' } // NEW: Include Office
-                                    ] 
-                                },
-                                {
-                                    model: SpIntermediateOutcome,
-                                    as: 'SelectedIntermediates',
-                                    include: [
-                                        { model: IntermediateOutcome, as: 'LibraryIntermediate' },
-                                        {
-                                            model: SpIntermediateOutcomeIndicator,
-                                            as: 'SelectedIndicators',
-                                            include: [
-                                                { model: IntermediateOutcomeIndicator, as: 'LibraryIndicator' },
-                                                { model: SpIntermediateOutcomeIndicatorTarget, as: 'Targets' },
-                                                { model: Office, as: 'ResponsibleOffice' } // NEW: Include Office
-                                            ]
-                                        },
-                                        {
-                                            model: SpIntervention,
-                                            as: 'SelectedInterventions',
-                                            include: [
-                                                { model: Intervention, as: 'LibraryIntervention' },
-                                                {
-                                                    model: SpOutput,
-                                                    as: 'SelectedOutputs',
-                                                    include: [
-                                                        { model: Output, as: 'LibraryOutput' },
-                                                        { 
-                                                            model: SpOutputIndicator, 
-                                                            as: 'SelectedIndicators', 
-                                                            include: [
-                                                                { model: OutputIndicator, as: 'LibraryIndicator' },
-                                                                { model: SpOutputIndicatorTarget, as: 'Targets' },
-                                                                { model: Office, as: 'ResponsibleOffice' } // NEW: Include Office
-                                                            ] 
-                                                        },
-                                                        { 
-                                                            model: SpOutputAction, 
-                                                            as: 'SelectedActions', 
-                                                            include: [
-                                                                { model: OutputAction, as: 'LibraryAction' },
-                                                                { model: SpOutputActionBudget, as: 'Budgets' },
-                                                                { model: Office, as: 'ResponsibleOffice' }, // NEW: Include Office
-                                                                { model: BudgetSource, as: 'BudgetSource' } // NEW: Include Source
-                                                            ] 
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
+                                    model: User, 
+                                    as: 'Author', 
+                                    attributes: ['name'] // Only pull the name of the NPA admin
                                 }
-                            ] 
+                            ],
+                            separate: true, // Recommended for performance with deep includes
+                            order: [['createdAt', 'DESC']] // Show newest feedback first
                         }
-                    ] 
-                }
-            ],
-            order: [
-                [{ model: SpObjective, as: 'SelectedObjectives' }, { model: Objective, as: 'LibraryObjective' }, 'objective_code', 'ASC']
-            ]
-        });
-           
+
+                ],
+                order: [
+                    [{ model: SpObjective, as: 'SelectedObjectives' }, { model: Objective, as: 'LibraryObjective' }, 'objective_code', 'ASC']
+                ]
+            })
+        ]);
+
         if (!plan) return res.status(404).send("Plan not found");
 
+        // 2. State & Locking Logic
+        const editableStatuses = ['Draft', 'Revision Required'];
+        const isPrintMode = req.query.print === 'true';
+        const isLocked = isPrintMode ? true : !editableStatuses.includes(plan.status);
+
+        // 3. Fetch library objectives not yet selected
         const selectedObjIds = plan.SelectedObjectives.map(obj => obj.objectiveId);
-        
         const libraryObjectives = await Objective.findAll({
             where: { 
                 programmeId: plan.programmeId,
-                id: { [Op.notIn]: selectedObjIds.length > 0 ? selectedObjIds : [0] }
+                id: { [Op.notIn]: selectedObjIds.length > 0 ? selectedObjIds : [] }
             },
             order: [['objective_code', 'ASC']]
         });
 
-       // FY Year Calculation (Optimized for Integer fy)
+        // 4. Generate Fiscal Year Array (5-year horizon)
         let years = [];
-
         if (plan.Call && plan.Call.fy) {
-            // No more split('/') needed! 
-            // We ensure it's a number just in case, then loop.
             const startYear = parseInt(plan.Call.fy); 
-            
-            // Generates [2025, 2026, 2027, 2028, 2029]
             years = Array.from({ length: 5 }, (_, i) => startYear + i);
         }
 
-        res.render('mda/plan-editor', {
+        // 5. Render
+        const template = isPrintMode ? 'mda/plans/plan-print' : 'mda/plans/editor';
+        res.render(template, {
             title: 'Setup Strategic Plan: Full Framework',
             plan,
             libraryObjectives,
-            offices,        // NEW: Pass to Pug
-            budgetSources,  // NEW: Pass to Pug
+            offices,
+            budgetSources,
+            isPrintMode,
+            isLocked,
             years
         });
 
@@ -343,12 +382,28 @@ exports.getLibraryIndicatorsBySpOutcome = async (req, res) => {
     const { spOutcomeId } = req.params;
     const selection = await SpOutcome.findByPk(spOutcomeId);
     
-    // Find indicators that belong to the Library Outcome
+    if (!selection) {
+      return res.status(404).json({ error: "Strategic Plan Outcome not found" });
+    }
+
+    // Find indicators with their National Alignment and NDP Yearly Targets
     const indicators = await OutcomeIndicator.findAll({
-      where: { outcomeId: selection.outcomeId }
+      where: { outcomeId: selection.outcomeId },
+      include: [{
+        model: NationalAlignment,
+        as: 'OutcomeNational', // Ensure this alias matches your OutcomeIndicator model association
+        include: [{
+          model: NationalValue,
+          as: 'YearlyValues', // Matches the 'as' in your NationalAlignment model
+          attributes: ['target_year', 'value', 'remarks']
+        }]
+      }],
+      order: [['indicatorCode', 'ASC']]
     });
+
     res.json(indicators);
   } catch (err) {
+    console.error("Fetch Library Indicators Error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -549,16 +604,29 @@ exports.saveIntervention = async (req, res) => {
 exports.getLibraryIntIndicators = async (req, res) => {
     try {
         const { spIntermediateOutcomeId } = req.params;
-        console.log(req.params)
+        
+        // 1. Find the link to the library
         const spInt = await SpIntermediateOutcome.findByPk(spIntermediateOutcomeId);
-        
-        
+        if (!spInt) return res.status(404).json({ error: "Intermediate Outcome selection not found" });
+
+        // 2. Fetch indicators with National Alignment and NDP targets
         const indicators = await IntermediateOutcomeIndicator.findAll({
-            where: { intermediateOutcomeId: spInt.intermediateOutcomeId }
+            where: { intermediateOutcomeId: spInt.intermediateOutcomeId },
+            include: [{
+                model: NationalAlignment,
+                as: 'IntermediateNational', // Alias in your IntermediateOutcomeIndicator model
+                include: [{
+                    model: NationalValue,
+                    as: 'YearlyValues', // Alias in your NationalAlignment model
+                    attributes: ['target_year', 'value']
+                }]
+            }],
+            order: [['indicatorCode', 'ASC']]
         });
+
         res.json(indicators);
     } catch (err) {
-        console.log(err)
+        console.error("Error fetching Intermediate Indicators:", err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -783,32 +851,39 @@ exports.deleteOutput = async (req, res) => {
 };
 exports.getLibraryOutputIndicators = async (req, res) => {
     try {
-        // 1. Get the ID from the URL. 
-        // Ensure this matches the name in your route: /api/library/output-indicators/:spOutputId
         const { spOutputId } = req.params; 
 
-        // 2. Find the "Selected Output" (the MDA's choice)
+        // 1. Find the Strategic Plan Output (The link between MDA and Library)
         const selectedOutput = await SpOutput.findByPk(spOutputId);
         
         if (!selectedOutput) {
             return res.status(404).json({ success: false, message: 'Strategic Plan Output not found' });
         }
 
-        // 3. Fetch indicators from the Library linked to the Library Output ID
+        // 2. Fetch indicators WITH National Alignment and NDP targets
         const indicators = await OutputIndicator.findAll({
             where: { 
-                // Use the library ID (outputId) found on the SpOutput record
                 outputId: selectedOutput.outputId 
             },
+            // Include the National Alignment logic so the frontend can show NDP benchmarks
+            include: [{
+                model: NationalAlignment,
+                as: 'OutputNational', // Must match the alias in your OutputIndicator model
+                include: [{
+                    model: NationalValue,
+                    as: 'YearlyValues', // Must match the alias in your NationalAlignment model
+                    attributes: ['target_year', 'value']
+                }]
+            }],
+            // Use attributes to keep the payload clean
             attributes: ['id', 'indicator', 'indicatorCode'],
-            // Use underscored name if your DB uses indicator_code
-            order: [['indicator_code', 'ASC']] 
+            order: [['indicatorCode', 'ASC']] 
         });
 
         res.json(indicators);
     } catch (error) {
         console.error('Error fetching library output indicators:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 exports.saveOutputIndicator = async (req, res) => {
@@ -934,7 +1009,7 @@ exports.saveOutputAction = async (req, res) => {
             budgetSourceId,      
             budgets              
         } = req.body;
-
+        console.log(req.body)
         let actionRecord;
 
         // 2. Prepare the data object (planId removed)
@@ -1059,5 +1134,26 @@ exports.getIndicatorDetails = async (req, res) => {
     } catch (error) {
         console.error("Fetch Error:", error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+exports.submitPlanToNPA = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const plan = await StrategicPlan.findByPk(id);
+
+        if (!plan) return res.status(404).json({ message: "Plan not found" });
+
+        // Update status to 'Submitted' (or whatever your NPA status key is)
+        plan.status = 'Submitted';
+        plan.submittedAt = new Date();
+        plan.submittedBy = req.user.id;
+        
+        await plan.save();
+
+        res.status(200).json({ message: "Successfully submitted to NPA" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };

@@ -4,7 +4,7 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class SpOutputIndicator extends Model {
     static associate(models) {
-      // 1. Link to the Library Indicator
+      // 1. REVERTED: Link to the Library Indicator using the Integer ID
       this.belongsTo(models.OutputIndicator, { 
         foreignKey: 'outputIndicatorId', 
         as: 'LibraryIndicator' 
@@ -22,7 +22,7 @@ module.exports = (sequelize) => {
         as: 'Targets' 
       });
 
-      // NEW: Responsible Office Link (Matching the others)
+      // Responsible Office Link
       if (models.Office) {
         this.belongsTo(models.Office, {
           foreignKey: 'responsibleOfficeId',
@@ -33,6 +33,12 @@ module.exports = (sequelize) => {
   }
 
   SpOutputIndicator.init({
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    // REVERTED: Use the ID field that exists in your DB
     outputIndicatorId: { 
       type: DataTypes.INTEGER, 
       field: 'output_indicator_id',
@@ -44,7 +50,7 @@ module.exports = (sequelize) => {
       allowNull: false 
     },
     adaptedOutputIndicator: { 
-      type: DataTypes.TEXT, // Changed to TEXT for longer descriptions
+      type: DataTypes.TEXT, 
       field: 'adapted_output_indicator',
       allowNull: true, 
       defaultValue: null 
@@ -53,23 +59,23 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING, 
       field: 'baseline_value' 
     },
-    // RENAME: from officeId to responsibleOfficeId for consistency
     responsibleOfficeId: { 
       type: DataTypes.INTEGER, 
       field: 'responsible_office_id',
       allowNull: true
     },
-    // NEW: Added for consistency with Intermediate model
     dataSource: {
       type: DataTypes.TEXT,
       field: 'data_source',
       allowNull: true
     }
+    // REMOVED: indicatorCode (to prevent SQL 'Unknown column' crash)
   }, { 
     sequelize, 
     modelName: 'SpOutputIndicator', 
     tableName: 'sp_output_indicators', 
-    underscored: true 
+    underscored: true,
+    timestamps: false
   });
 
   return SpOutputIndicator;

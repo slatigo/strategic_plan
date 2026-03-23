@@ -9,6 +9,10 @@ module.exports = (sequelize) => {
         foreignKey: 'mda_id', // Changed from organization_id
         as: 'admins'
       });
+      this.hasMany(models.MdaReport, { 
+        foreignKey: 'mdaId', // Use the camelCase key defined in MdaReport
+        as: 'Reports' 
+      });
       this.hasMany(models.Office, { 
         foreignKey: 'mda_id', // Recommended to use the actual DB column name
         as: 'Offices' 

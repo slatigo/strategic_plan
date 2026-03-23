@@ -1,0 +1,75 @@
+extends ./layout
+
+block npa_content
+  .container-fluid
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h3.fw-bold.text-dark FY #{call.fy} Strategic Plan Submissions
+        p.text-muted Monitoring 5-Year Plan Compliance for all MDAs
+      
+      .d-flex.gap-2
+        form.d-flex(method="GET")
+          input.form-control.me-2(type="search" name="search" placeholder="Search MDA..." value=search)
+          button.btn.btn-outline-primary(type="submit") Search
+
+    .card.border-0.shadow-sm.rounded-4
+      .card-body.p-0
+        .table-responsive
+          table.table.table-hover.align-middle.mb-0
+            thead.table-light
+              tr
+                th.px-4(style="width: 40%") MDA / Institution
+                th Status
+                th.text-center Programme
+                th.text-end.px-4 Actions
+            tbody
+              if mdas && mdas.length > 0
+                each mda in mdas
+                  - const plan = mda.plan
+                  - const s = plan ? plan.status : 'Not Started'
+                  
+                  tr
+                    td.px-4
+                      .fw-bold.text-dark= mda.name
+                      small.text-muted.text-uppercase= mda.code
+                    
+                    td
+                      if s === 'Submitted'
+                        span.badge.rounded-pill.bg-warning.text-dark 
+                          i.fas.fa-clock.me-1
+                          | Pending Review
+                      else if s === 'Approved'
+                        span.badge.rounded-pill.bg-success 
+                          i.fas.fa-check-circle.me-1
+                          | Approved
+                      else if s === 'Pending Correction'
+                        span.badge.rounded-pill.bg-danger 
+                          i.fas.fa-exclamation-circle.me-1
+                          | Needs Revision
+                      else if plan
+                        span.badge.rounded-pill.bg-secondary Draft
+                      else
+                        span.text-muted.small Not Started
+
+                    td.text-center
+                      if plan && plan.Programme
+                        small.fw-medium= plan.Programme.programme_name
+                      else
+                        span.text-muted.small —
+
+                    td.text-end.px-4
+                      if plan
+                        a.btn.btn-sm.btn-primary.px-3(href=`/npa/plans/${plan.id}/review`)
+                          i.fas.fa-search.me-1
+                          | Review Plan
+                      else
+                        button.btn.btn-sm.btn-light.disabled.text-muted No Submission
+              else
+                tr
+                  td.text-center.py-5(colspan="4") No MDAs found matching your criteria.
+
+    //- Pagination (Optional)
+    if totalPages > 1
+      nav.mt-4
+        ul.pagination.justify-content-center
+          //- Standard pagination logic here

@@ -4,10 +4,29 @@ block npa_content
   .d-flex.justify-content-between.align-items-center.mb-4
     div
       h2.fw-bold Strategic Plan Calls
-      p.text-muted Manage the 5-year planning cycles.
+      p.text-muted Manage the 5-year planning cycles and monitor MDA response rates.
     button.btn.btn-primary(onclick="openPlanCallModal()")
       i.fas.fa-bullhorn.me-2
       | Issue New Call
+
+  //- Quick Stats Summary Row
+  .row.g-3.mb-4
+    .col-md-3
+      .card.border-0.shadow-sm.bg-primary.text-white
+        .card-body
+          h6.small.text-uppercase.opacity-75 Total MDAs
+          h3.fw-bold.mb-0= totalMdas
+    .col-md-3
+      .card.border-0.shadow-sm
+        .card-body
+          h6.small.text-uppercase.text-muted Active Submissions
+          //- Sum of all 'Submitted' across all calls
+          h3.fw-bold.mb-0.text-warning= calls.reduce((acc, c) => acc + (parseInt(c.dataValues.countSubmitted) || 0), 0)
+    .col-md-3
+      .card.border-0.shadow-sm
+        .card-body
+          h6.small.text-uppercase.text-muted Overall Approved
+          h3.fw-bold.mb-0.text-success= calls.reduce((acc, c) => acc + (parseInt(c.dataValues.countApproved) || 0), 0)
 
   if calls && calls.length > 0
     .card.border-0.shadow-sm
@@ -16,53 +35,60 @@ block npa_content
           table.table.table-hover.align-middle.mb-0
             thead.table-light
               tr
-                th.px-4 Plan Cycle (FY)
+                th.px-4 Plan Cycle
                 th Description
                 th Deadline
+                th.text-center Submission Breakdown
                 th Status
                 th.text-end.px-4 Actions
             tbody
               each call in calls
                 tr
-                  td.px-4.fw-bold= `${call.fy} / ${Number(call.fy) + 5}`
-                  td.text-truncate(style="max-width: 250px;")= call.description
+                  td.px-4.fw-bold= call.fy
+                  td.text-truncate(style="max-width: 200px;")= call.description
                   td
                     - const isOverdue = new Date(call.deadline) < new Date() && call.status === 'Open'
-                    span(class=isOverdue ? 'text-danger fw-bold' : '') #{call.deadline}
+                    span(class=isOverdue ? 'text-danger fw-bold' : '') #{new Date(call.deadline).toLocaleDateString()}
+                  
+                  //- STATS BREAKDOWN COLUMN
+                  td.text-center
+                    - const d = parseInt(call.dataValues.countDraft) || 0
+                    - const s = parseInt(call.dataValues.countSubmitted) || 0
+                    - const a = parseInt(call.dataValues.countApproved) || 0
+                    - const r = parseInt(call.dataValues.countRevision) || 0
+                    - const total = s + a + r
+                    
+                    .d-flex.flex-column.align-items-center
+                      .d-flex.gap-1.mb-1
+                        span.badge.bg-secondary(title="Drafts")= d
+                        span.badge.bg-warning.text-dark(title="Submitted")= s
+                        span.badge.bg-success(title="Approved")= a
+                        span.badge.bg-danger(title="Revision")= r
+                      
+                      - const percent = Math.round(((s + a) / totalMdas) * 100) || 0
+                      .progress(style="height: 5px; width: 100px;")
+                        .progress-bar(class=percent < 50 ? 'bg-warning' : 'bg-success' style=`width: ${percent}%`)
+                      small.x-small.text-muted.mt-1 #{percent}% Compliance
+
                   td
                     span.badge.rounded-pill(class=call.status === 'Open' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary')= call.status
+                  
                   td.text-end.px-4
-                    button.btn.btn-sm.btn-outline-primary.me-1(onclick=`openPlanCallModal(${JSON.stringify(call)})`)
-                      i.fas.fa-edit
-                    button.btn.btn-sm.me-1(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')`)
-                      i.fas(class=call.status === 'Open' ? 'fa-lock' : 'fa-lock-open')
-                    button.btn.btn-sm.btn-outline-danger(onclick=`deletePlanCall(${call.id}, '${call.fy}/${call.fy + 5}')`)
-                      i.fas.fa-trash-alt
+                    .btn-group
+                      //- Main Point of Entry to see the specific MDAs
+                      a.btn.btn-sm.btn-primary(href=`/npa/plan-calls/${call.id}/submissions` title="View Submissions")
+                        i.fas.fa-users.me-1
+                        | View
+                      
+                      button.btn.btn-sm.btn-outline-secondary(onclick=`editPlanCall(${call.id})`)
+                        i.fas.fa-edit
+                      
+                      button.btn.btn-sm(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')`)
+                        i.fas(class=call.status === 'Open' ? 'fa-lock' : 'fa-lock-open')
+
   else
     .text-center.py-5
+      i.fas.fa-bullhorn.fa-3x.text-light.mb-3
       h4 No Planning Calls Found.
 
-  // Modal
-  .modal.fade#planCallModal(tabindex="-1")
-    .modal-dialog
-      .modal-content
-        .modal-header
-          h5.modal-title Issue New Plan Call
-          button.btn-close(data-bs-dismiss="modal")
-        .modal-body
-          form#planCallForm
-            .mb-3
-              label.form-label.fw-bold Strategic Plan Cycle
-              input.form-control(type="text" name="fy" placeholder="e.g. 2025/2030" required)
-            .mb-3
-              label.form-label.fw-bold Deadline
-              input.form-control(type="date" name="deadline" required)
-            .mb-3
-              label.form-label.fw-bold Description
-              textarea.form-control(name="description" rows="3")
-        .modal-footer
-          button.btn.btn-light(data-bs-dismiss="modal") Cancel
-          button.btn.btn-primary(onclick="savePlanCall()") Save Call
-block scripts
-  //- The '/' at the start refers to the 'public' folder defined in your app.js
-  script(src="/js/npa/plan-call-management.js")
+  // ... (Keep your modal as it was)

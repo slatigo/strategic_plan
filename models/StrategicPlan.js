@@ -5,7 +5,11 @@ module.exports = (sequelize) => {
   class StrategicPlan extends Model {
     static associate(models) {
       // Links the plan to the specific Fiscal Year Call
-      this.belongsTo(models.PlanCall, { foreignKey: 'callId', as: 'Call' });
+      this.belongsTo(models.PlanCall, { 
+        foreignKey: 'callId', 
+        targetKey: 'id', 
+        as: 'Call' 
+      });
       
       // Links to the MDA (Renamed from org_id to mda_id to match your system)
       this.belongsTo(models.Mda, { foreignKey: 'mdaId', as: 'Mda' });
@@ -27,6 +31,10 @@ module.exports = (sequelize) => {
       this.hasMany(models.SpObjective, { 
         foreignKey: 'planId', 
         as: 'SelectedObjectives' 
+      });
+      this.hasMany(models.PlanComment, { 
+        foreignKey: 'plan_id', 
+        as: 'Comments' 
       });
     }
   }

@@ -16,19 +16,19 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'MdaSelections' 
             });
 
-            // 3. NEW: Link to National Data (Baselines & Units)
-            // This is how you get the decimals and units for this specific code
+            // 3. UPDATED: Link to National Data (Baselines & Units)
+            // Using a unique alias prevents SQL table name collisions in nested includes
             this.hasOne(models.NationalAlignment, {
                 foreignKey: 'indicator_code',
                 sourceKey: 'indicatorCode',
-                as: 'NationalData'
+                as: 'IntermediateNational' // <--- CHANGED THIS from 'NationalData'
             });
         }
     }
 
     IntermediateOutcomeIndicator.init({
         indicatorCode: { 
-            type: DataTypes.STRING(255), // Match SQL VARCHAR(255)
+            type: DataTypes.STRING(255), 
             field: 'indicator_code' 
         },
         intermediateOutcomeId: { 

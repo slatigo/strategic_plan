@@ -1,0 +1,65 @@
+//- views/partials/_report_grid_full.pug
+- const reportingFY = report && report.Call ? report.Call.reportingYear : 'N/A'
+if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
+  each obj in plan.SelectedObjectives
+    .card.shadow-sm.mb-5.border-start.border-4.border-primary
+      .card-header.bg-white.py-3
+        span.badge.bg-primary.mb-2 Objective #{obj.LibraryObjective ? obj.LibraryObjective.objectiveCode : 'N/A'}
+        h5.card-title.mb-0.fw-bold #{obj.orgObjective}
+
+      .card-body.p-4
+        if obj.SelectedOutcomes && obj.SelectedOutcomes.length > 0
+          each oc in obj.SelectedOutcomes
+            .outcome-box.mb-5.p-0.bg-white.rounded.border.shadow-sm
+              .card-header.bg-light.border-bottom.py-3
+                - const ocLib = oc.LibraryOutcome || {}
+                span.badge.bg-info.text-dark.mb-1 OUTCOME: #{ocLib.outcomeCode || 'N/A'}
+                h6.fw-bold.mb-0 #{ocLib.outcomeName || 'Strategic Outcome'}
+              
+              .card-body.p-4
+                //- 1. LEVEL 2: OUTCOME INDICATORS TABLE
+                include ./_grid_tables/_outcome_indicators_table
+
+                //- 2. LEVEL 3: INTERMEDIATE OUTCOMES
+                if oc.SelectedIntermediates && oc.SelectedIntermediates.length > 0
+                  each io in oc.SelectedIntermediates
+                    - const ioLib = io.LibraryIntermediate || {}
+                    .intermediate-item.ps-3.mb-4.border-start.border-3.border-info.ms-4
+                      small.text-info.fw-bold.x-small #{ioLib.intermediateOutcomeCode || 'INT'}
+                      h6.mb-2.small.fw-bold #{ioLib.intermediateOutcome || 'Intermediate Outcome'}
+                      
+                      if io.SelectedIndicators && io.SelectedIndicators.length > 0
+                        .ms-3.mb-3
+                          each iInd in io.SelectedIndicators
+                            include ./_grid_tables/_intermediate_indicators_row
+
+                      //- 3. LEVEL 4: INTERVENTIONS & OUTPUTS
+                      if io.SelectedInterventions && io.SelectedInterventions.length > 0
+                        each inv in io.SelectedInterventions
+                          - const invLib = inv.LibraryIntervention || {}
+                          .ms-3.mt-3
+                            p.x-small.fw-bold.text-muted.mb-2 
+                              i.fas.fa-chevron-right.me-1.text-success
+                              | INTERVENTION: #{invLib.interventionCode} - #{invLib.intervention}
+
+                            if inv.SelectedOutputs && inv.SelectedOutputs.length > 0
+                              each outp in inv.SelectedOutputs
+                                - const outpLib = outp.LibraryOutput || {}
+                                .output-item.p-3.bg-white.border.rounded.mb-3.shadow-sm
+                                  h6.small.fw-bold.text-primary.mb-3
+                                    i.fas.fa-caret-right.me-2
+                                    | OUTPUT: #{outpLib.outputCode} - #{outpLib.output}
+                                  
+                                  //- Output Indicators
+                                  if outp.SelectedIndicators && outp.SelectedIndicators.length > 0
+                                    .ms-3.mb-3
+                                      each oInd in outp.SelectedIndicators
+                                        include ./_grid_tables/_output_indicators_row
+
+                                  //- Action/Expenditure Table
+                                  if outp.SelectedActions && outp.SelectedActions.length > 0
+                                    include ./_grid_tables/_action_expenditure_table
+else
+  .alert.alert-info.text-center.py-5
+    i.fas.fa-exclamation-triangle.fa-2x.mb-3
+    p No strategic framework selections found for this plan.
