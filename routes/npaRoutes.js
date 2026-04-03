@@ -11,7 +11,7 @@ const planCallController = require('../controllers/npa/planCallController');
 const reportCallController = require('../controllers/npa/reportCallController');
 
 // 2. Import Middleware
-const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { protect, restrictTo } = require('../middleware/authMiddleWare');
 
 // 3. Apply Global Security
 // All routes in this file require being logged in as an NPA Admin
