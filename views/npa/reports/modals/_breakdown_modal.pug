@@ -1,0 +1,30 @@
+#breakdownModal.modal.fade(tabindex="-1" aria-hidden="true")
+  .modal-dialog.modal-lg.modal-dialog-centered
+    .modal-content.border-0.shadow
+      .modal-header.bg-light
+        div
+          h5#modalTitle.modal-title.fw-bold MDA Performance Breakdown
+          small#modalSubTitle.text-muted.text-uppercase.x-small Indicator Code: ---
+        button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
+      
+      .modal-body.p-0
+        .table-responsive
+          table.table.table-hover.mb-0
+            thead.bg-light.x-small.text-uppercase
+              tr
+                th.ps-4 Contributing MDA
+                th.text-end Reported Value
+                th.text-center Performance %
+            tbody#mdaBreakdownBody
+              //- JS will inject rows here
+        
+        #noMdaData.text-center.py-5.d-none
+          i.bi.bi-building-exclamation.display-4.text-muted
+          p.mt-2.text-muted No MDA-level reports found for this indicator.
+
+      .modal-footer.bg-light.border-0
+        .w-100.d-flex.justify-content-between.align-items-center
+          div
+            span.text-muted.small Total Aggregated: 
+            span#modalTotalValue.fw-bold.text-primary 0
+          button.btn.btn-secondary.btn-sm(type="button" data-bs-dismiss="modal") Close

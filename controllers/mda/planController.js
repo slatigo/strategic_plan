@@ -38,9 +38,11 @@ const {
     User,
 
     // 4. Utilities
-    Sequelize 
+    Sequelize,
+    sequelize 
 } = require('../../models'); // Adjust path based on your file's location
 
+// Adjust the path (../../) to point to your models folder
 const { fullPlanStructure } = require('../../utils/planIncludes');
 const { Op } = require('sequelize');
 const AppError = require('../../utils/appError');
@@ -308,7 +310,7 @@ exports.saveOutcomeIndicator = async (req, res) => {
             dataSource,
             targets 
         } = req.body;
-        console.log(req.body)
+       
         
         // Note: planId is intentionally removed from here
 

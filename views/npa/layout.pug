@@ -4,81 +4,72 @@ html(lang="en")
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1")
     title NPA Portal | #{title}
-    //- Bootstrap 5 CSS
     link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet")
-    //- Lucide Icons (using the same font set you had)
     link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css")
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css")
     style.
       body { background-color: #f8f9fa; }
-      .sidebar { min-width: 250px; max-width: 250px; min-height: 100vh; transition: all 0.3s; }
+      /* THE FIX: Sticky Sidebar */
+      .sidebar { 
+        min-width: 250px; 
+        max-width: 250px; 
+        height: 100vh; 
+        position: sticky; 
+        top: 0; 
+        z-index: 1000;
+      }
       .sidebar .nav-link { color: rgba(255,255,255,.75); padding: 0.8rem 1.5rem; border-radius: 0.5rem; margin: 0 0.5rem 0.2rem; }
       .sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
       .sidebar .nav-link.active { color: #fff; background: #0d6efd; }
-      .main-content { width: 100%; }
-  
+      
+      /* Ensure sidebar nav is scrollable if items exceed screen height */
+      .sidebar nav { overflow-y: auto; }
+      
   body
     .d-flex
-      //- Sidebar
       aside.sidebar.bg-dark.text-white.d-flex.flex-column
-          .p-4.mb-2
-            h4.fw-bold.mb-0 NPA ADMIN
+        .p-4.mb-2
+          h4.fw-bold.mb-0 NPA ADMIN
+        
+        nav.nav.flex-column.flex-grow-1
+          a.nav-link(href="/npa/dashboard" class=activePage === 'dashboard' ? 'active' : '')
+            i.fas.fa-chart-line.me-3
+            | Dashboard
+          a.nav-link(href="/npa/plan-calls" class=activePage === 'plan-calls' ? 'active' : '')
+            i.fas.fa-bullhorn.me-3
+            | Plan Calls
+          a.nav-link(href="/npa/report-calls" class=activePage === 'report-calls' ? 'active' : '')
+            i.fas.fa-calendar-check.me-3
+            | Report Calls
+          a.nav-link(href="/npa/mda" class=activePage === 'mdas' ? 'active' : '')
+            i.fas.fa-sitemap.me-3
+            | MDAs
+          a.nav-link(href="/npa/admins" class=activePage === 'admins' ? 'active' : '')
+            i.fas.fa-user-shield.me-3
+            | Admins
           
-          nav.nav.flex-column.flex-grow-1
-            //- Dashboard
-            a.nav-link(href="/npa/dashboard" class=activePage === 'dashboard' ? 'active' : '')
-              i.fas.fa-chart-line.me-3
-              | Dashboard
-            a.nav-link(href="/npa/plan-calls" class=activePage === 'plan-calls' ? 'active' : '')
-              i.fas.fa-bullhorn.me-3
-              | Plan Calls
-            //- NEW: Quarterly Snapshots
-            a.nav-link(href="/npa/report-calls" class=activePage === 'report-calls' ? 'active' : '')
-              i.fas.fa-calendar-check.me-3
-              | Report Calls
-            
-            //- MDAs
-            a.nav-link(href="/npa/mda" class=activePage === 'mdas' ? 'active' : '')
-              i.fas.fa-sitemap.me-3
-              | MDAs
 
+        .p-3.border-top.border-secondary
+          button.btn.btn-link.text-danger.text-decoration-none(onclick="handleLogout()")
+            i.fas.fa-right-from-bracket.me-2
+            | Logout
 
-            //- System Admins
-            a.nav-link(href="/npa/admins" class=activePage === 'admins' ? 'active' : '')
-              i.fas.fa-user-shield.me-3
-              | Admins
-
-            //- Settings
-            a.nav-link(href="/npa/settings" class=activePage === 'settings' ? 'active' : '')
-              i.fas.fa-gears.me-3
-              | Settings
-
-          .p-3.border-top.border-secondary
-            button.btn.btn-link.text-danger.text-decoration-none(onclick="handleLogout()")
-              i.fas.fa-right-from-bracket.me-2
-              | Logout
-
-      //- Main Content
       .main-content.d-flex.flex-column.flex-grow-1
-        header.navbar.bg-white.shadow-sm.px-4.py-3.border-bottom
+        header.navbar.bg-white.shadow-sm.px-4.py-3.border-bottom.sticky-top
           h5.mb-0.fw-bold.text-dark= title
           .d-flex.align-items-center
             span.me-3.text-muted.small.fw-medium= user.name
-            //- Changed justify-center to justify-content-center
             .rounded-circle.bg-primary.text-white.d-flex.align-items-center.justify-content-center.shadow-sm(style="width: 38px; height: 38px; min-width: 38px;")
               span.fw-bold(style="font-size: 0.9rem; line-height: 1;")= user.name.charAt(0).toUpperCase()
 
         main.p-4
           block npa_content
 
-    //- Bootstrap Bundle with Popper
     script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js")
-    script(src="https://unpkg.com/lucide@latest")
+    script(src="https://cdn.jsdelivr.net/npm/sweetalert2@11")
     script.
       async function handleLogout() {
           const res = await fetch('/api/logout', { method: 'POST' });
           if(res.ok) window.location.href = '/login';
       }
-    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
-    script(src="https://cdn.jsdelivr.net/npm/sweetalert2@11")
     block scripts
-     

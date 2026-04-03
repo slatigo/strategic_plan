@@ -6,99 +6,191 @@ block npa_content
       div
         h3.fw-bold National Performance Analysis
         p.text-muted 
-          | Period: FY #{snapshot.reportingYear} #{snapshot.quarter} | 
-          span.badge.bg-soft-success.text-success #{stats.totalMdas} MDAs Reporting
+          | Period: FY #{snapshot.reportingYear} | 
+          span.badge.bg-soft-primary.text-primary Integrated Results Chain View
       
-      //- THE SEARCH TOOL
-      .search-box(style="width: 400px;")
-        .input-group.shadow-sm
-          span.input-group-text.bg-white: i.fas.fa-search
-          input#indicatorSearch.form-control(type="text" placeholder="Search by name or code..." onkeyup="filterIndicators()")
+      //- NAVIGATION BUTTONS
+      .btn-group.shadow-sm
+        a.btn.btn-white.active(href=`/npa/report-calls/${snapshot.id}/analysis`)
+          i.bi.bi-diagram-3.me-2
+          | Hierarchy View
+        a.btn.btn-white(href=`/npa/report-calls/${snapshot.id}/analysis/?view=focus`)
+          i.bi.bi-search.me-2
+          | Indicator Focus
 
-    //- High Level National Scorecard
-    .row.g-3.mb-4
-      .col-md-4
-        .card.border-0.shadow-sm.bg-dark.text-white
-          .card-body.text-center
-            h6.small.text-uppercase.text-light Overall National Achievement
-            h2.fw-bold.mb-0 #{stats.overallAchievement}%
-            small.text-muted Based on #{stats.indicatorCount} active indicators
-
-    //- Dynamic Sections Helper Function
-    mixin indicatorSection(items, title, badgeClass)
-      if items && items.length > 0
-        h5.fw-bold.mt-5.mb-3= title
-        each item in items
-          //- Data attributes updated to match controller mapping
-          .card.border-0.shadow-sm.mb-4.indicator-card(
-              data-indicator=(item.name ? item.name.toLowerCase() : 'unknown') 
-              data-code=(item.Indicator.LibraryIndicator.indicatorCode ? item.Indicator.LibraryIndicator.indicatorCode.toLowerCase() : 'n/a')
-            )
-            .card-header.bg-white.py-3.border-bottom
-              .d-flex.justify-content-between.align-items-center
-                div
-                  span.badge.me-2(class=badgeClass)= title.split(' ') + ' Indicator'
-                  span.fw-bold= item.name
-                  small.text-muted.ms-2 [#{item.Indicator.LibraryIndicator.indicatorCode}]
-                .text-end
-                  span.h5.mb-0(class=item.achievement >= 90 ? 'text-success' : (item.achievement >= 50 ? 'text-warning' : 'text-danger')) #{item.achievement}%
-            
-            .card-body.p-0
-              .table-responsive
-                table.table.table-hover.align-middle.mb-0
-                  thead.table-light
-                    tr
-                      th.px-4 Scope
-                      th.text-center Target (FY #{snapshot.reportingYear})
-                      th.text-center National Avg Actual
-                      th.text-center Polarity
-                      th.text-center Status
-                  tbody
-                    tr
-                      td.px-4 Aggregate of #{item.mdaCount} MDAs
-                      td.text-center.fw-bold #{item.target} #{item.unit}
-                      td.text-center.text-primary.fw-bold #{item.actual.toLocaleString()} #{item.unit}
-                      td.text-center
-                        if item.polarity === 'Incr'
-                          span.text-success: i.fas.fa-arrow-trend-up
-                          small.d-block.text-muted Higher is Better
-                        else
-                          span.text-danger: i.fas.fa-arrow-trend-down
-                          small.d-block.text-muted Lower is Better
-                      td.text-center
-                        span.badge(class=item.achievement >= 90 ? 'bg-success' : (item.achievement >= 50 ? 'bg-warning' : 'bg-danger'))
-                          = item.achievement >= 90 ? 'On Track' : (item.achievement >= 50 ? 'Under-performing' : 'Critical')
-
-    //- Render the 3 levels
-    +indicatorSection(outcomes, 'Outcome Indicators', 'bg-primary-subtle text-primary')
-    +indicatorSection(intermediates, 'Intermediate Outcome Indicators', 'bg-info-subtle text-info')
-    +indicatorSection(outputs, 'Output Indicators', 'bg-secondary-subtle text-secondary')
-
-    //- JavaScript for the Live Search Tool
-    script.
-      function filterIndicators() {
-        let input = document.getElementById('indicatorSearch').value.toLowerCase();
-        let cards = document.getElementsByClassName('indicator-card');
+    each objData, objName in results
+      .mb-5
+        .d-flex.align-items-center.mb-3.border-bottom.pb-2
+          .bg-primary.text-white.rounded.px-3.py-1.me-3.fw-bold #{objData.code}
+          h4.mb-0.fw-bold #{objName}
         
-        for (let card of cards) {
-          let text = card.getAttribute('data-indicator') || "";
-          let code = card.getAttribute('data-code') || "";
-          
-          if (text.includes(input) || code.includes(input)) {
-            card.style.display = "";
-          } else {
-            card.style.display = "none";
-          }
-        }
-      }
-      async function loadBreakdown(id, type) {
-          const response = await fetch(`/analysis/breakdown?indicatorId=${id}&type=${type}`);
-          const data = await response.json();
-          
-          // Inject the data into a single shared Modal on the page
-          let html = data.map(m => `<tr><td>${m.ParentReport.Mda.name}</td><td>${m.actualValue}</td></tr>`).join('');
-          document.getElementById('modalTableBody').innerHTML = html;
-          
-          const myModal = new bootstrap.Modal(document.getElementById('breakdownModal'));
-          myModal.show();
-      }
+        each macroData, macroName in objData.macroOutcomes
+          .card.border-0.shadow-sm.mb-5
+            .card-header.bg-white.py-3
+              .d-flex.justify-content-between.align-items-center
+                h5.mb-0.fw-bold.text-dark
+                  span.text-muted.me-2 #{macroData.code}
+                  | #{macroName}
+                span.badge.bg-light.text-primary.border Macro Goal
+            
+            .card-body.pt-0
+              //- LEVEL 2: MACRO TABLE
+              if macroData.macroIndicators.length > 0
+                .table-responsive.mb-4
+                  table.table.table-hover.align-middle
+                    thead.bg-light.small.text-uppercase
+                      tr
+                        th.ps-3(style="width: 100px") Code
+                        th Macro Indicator
+                        th.text-center Unit
+                        th.text-end Target
+                        th.text-end Actual
+                        th.text-center Achievement
+                        th.text-end Actions
+                    tbody
+                      each item in macroData.macroIndicators
+                        +indicatorRow(item)
+              
+              //- LEVEL 3: INTERMEDIATE
+              if Object.keys(macroData.intermediates).length > 0
+                .mt-4.ps-md-4
+                  h6.fw-bold.text-muted.mb-3.text-uppercase.small 
+                    i.bi.bi-arrow-return-right.me-2
+                    | Intermediate Outcomes & Milestones
+                  
+                  each interData, interName in macroData.intermediates
+                    .border-start.border-3.border-light.ps-3.mb-4
+                      .d-flex.align-items-center.mb-3
+                        span.badge.bg-secondary.me-2 #{interData.code || 'INT'}
+                        span.fw-bold.text-dark.me-3 #{interName}
+                      
+                      if interData.interIndicators.length > 0
+                        .table-responsive.mb-3
+                          table.table.table-sm.table-borderless.align-middle
+                            thead.small.text-muted.border-bottom
+                              tr
+                                th(style="width: 100px") Code
+                                th Intermediate Indicator
+                                th.text-center Unit
+                                th.text-end Target
+                                th.text-end Actual
+                                th.text-center %
+                                th
+                            tbody
+                              each item in interData.interIndicators
+                                +indicatorRow(item, true)
+
+                      //- LEVEL 4: INTERVENTIONS ACCORDION
+                      if Object.keys(interData.interventions).length > 0
+                          - let parentId = `acc-${interData.code || 'default'}`
+                          .accordion.accordion-flush.border.rounded(id=parentId)
+                            - let invIdx = 0
+                            each invData, invName in interData.interventions
+                              - invIdx++
+                              - let invId = `collapse-${interData.code}-${invIdx}`
+                              .accordion-item
+                                h2.accordion-header
+                                  button.accordion-button.collapsed.custom-toggle(
+                                    type="button" 
+                                    data-target=`#${invId}`
+                                  )
+                                    span.small.fw-bold Intervention: #{invName}
+                                
+                                .accordion-collapse.collapse(id=invId)
+                                  .accordion-body.bg-light.p-0
+                                  each outData, outName in invData.outputs
+                                    .p-3.border-bottom
+                                      .fw-bold.text-primary.small.mb-2 
+                                        i.bi.bi-box.me-1
+                                        | Output: #{outName}
+                                      
+                                      if outData.indicators.length > 0
+                                        .ps-3.mb-3
+                                          table.table.table-sm.bg-white.rounded.mb-0
+                                            thead.x-small.text-muted.border-bottom
+                                              tr
+                                                th Code
+                                                th Indicator
+                                                th.text-center Unit
+                                                th.text-end Target
+                                                th.text-end Actual
+                                                th.text-center %
+                                                th
+                                            tbody
+                                              each item in outData.indicators
+                                                +indicatorRow(item, true)
+                                      
+                                      //- UPDATED Actions (Financial) with Button
+                                      if outData.actions.length > 0
+                                        .ps-3.mt-2
+                                          label.text-muted.x-small.text-uppercase.fw-bold.mb-2 Financial Actions
+                                          each action in outData.actions
+                                            .d-flex.justify-content-between.align-items-center.py-2.border-bottom.border-dashed
+                                              div
+                                                span.text-dark.small.fw-semibold #{action.name}
+                                                br
+                                                small.text-primary.x-small 
+                                                  i.bi.bi-building.me-1
+                                                  | #{action.reportCount || 0} Contributing MDAs
+                                              .text-end.d-flex.align-items-center
+                                                .me-3
+                                                  div.x-small
+                                                    span.text-muted Target: 
+                                                    span.fw-bold #{action.nationalTarget}
+                                                  div.x-small
+                                                    span.text-muted Actual: 
+                                                    span.text-primary.fw-bold #{action.nationalActual}
+                                                
+                                                button.btn.btn-sm.btn-outline-primary.view-mda-performance(
+                                                  type="button"
+                                                  data-bs-toggle="modal" 
+                                                  data-bs-target="#breakdownModal" 
+                                                  data-metric=JSON.stringify(action)
+                                                )
+                                                  i.bi.bi-building
+
+    if Object.keys(results).length === 0
+      .text-center.py-5
+        p.text-muted No results found.
+
+    include modals/_breakdown_modal
+
+//- MIXIN DEFINITION
+mixin indicatorRow(item, isSmall = false)
+  tr(class=isSmall ? 'small border-bottom' : '')
+    td.ps-3
+      span.badge.bg-light.text-dark.border.fw-normal #{item.code}
+    td
+      div.fw-semibold #{item.name}
+      if item.reportCount > 0
+        small.text-primary.x-small 
+          i.bi.bi-building.me-1
+          | #{item.reportCount} Contributing MDAs
+      else
+        small.text-muted.x-small No MDAs reported
+    td.text-center.text-muted #{item.unit}
+    td.text-end.fw-bold #{item.nationalTarget || '0'}
+    td.text-end
+      span.text-primary.fw-bold #{item.nationalActual || '0'}
+    td.text-center
+      //- Math.min(progress, 100) ensures the bar doesn't break the UI, 
+      //- but the label still shows the true achievement (e.g., 107%)
+      - let achv = parseFloat(item.achievement || 0)
+      - let progress = Math.min(achv, 100)
+      //- Color logic: Now 100%+ is ALWAYS success because backend handled polarity
+      - let color = achv >= 100 ? 'success' : (achv >= 50 ? 'warning' : 'danger')
+      
+      .progress.mx-auto.mb-1(style="height: 6px; width: 60px;")
+        .progress-bar(class=`bg-${color}` style=`width: ${progress}%`)
+      small(class=`text-${color} fw-bold`) #{item.achievement}%
+    td.text-end
+      button.btn.btn-sm.btn-outline-primary.view-mda-performance(
+        type="button"
+        data-bs-toggle="modal" 
+        data-bs-target="#breakdownModal" 
+        data-metric=JSON.stringify(item)
+      )
+        i.bi.bi-building
+
+block scripts
+  script(src="/js/npa/npa-analysis.js")

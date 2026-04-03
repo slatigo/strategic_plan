@@ -8,6 +8,7 @@
         button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
       .modal-body
         form#intIndicatorForm(action="/mda/plans/indicators/save" method="POST")
+            
           input#modal_intermediate_parent_id(type="hidden" name="spIntermediateOutcomeId")
           input(type="hidden" name="id") 
           

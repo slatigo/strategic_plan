@@ -2,16 +2,41 @@
 if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
   each obj in plan.SelectedObjectives
     .card.shadow-sm.mb-5.border-start.border-4.border-primary
-      .card-header.bg-white.py-3
-        .row.align-items-center
-          .col
-            span.badge.bg-primary.mb-2 Objective #{obj.LibraryObjective.objectiveCode}
-            h5.card-title.mb-0 #{obj.orgObjective}
-          .col-auto
-            if !isLocked
-              button.btn.btn-sm.btn-success(onclick=`prepareOutcomeModal(${obj.id}, ${obj.LibraryObjective.id}, "${obj.orgObjective}")`)
-                i.fas.fa-plus.me-1
-                | Add Outcome
+      .card-header.bg-white.py-3.border-bottom-0
+            .row.align-items-center
+              .col
+                //- National Context Row
+                .d-flex.align-items-center.mb-2
+                  span.badge.bg-soft-primary.text-primary.border.border-primary.me-2
+                    i.fas.fa-landmark.me-1
+                    | NDP Objective #{obj.LibraryObjective.objectiveCode}
+                  small.text-muted.fw-bold.text-uppercase National Standard
+                
+                //- The National Objective Name (Reference)
+                h6.text-muted.mb-2.fw-normal
+                  | #{obj.LibraryObjective.objectiveName}
+                
+                //- The MDA Interpretation (Focus)
+                h5.card-title.mb-0.fw-bold.text-dark
+                  i.fas.fa-arrow-right.me-2.text-primary.small
+                  | #{obj.orgObjective || obj.LibraryObjective.objectiveName}
+
+              .col-auto
+                if !isLocked
+                  .btn-group
+                    button.btn.btn-sm.btn-outline-success(
+                      type="button"
+                      onclick=`prepareOutcomeModal(${obj.id}, ${obj.LibraryObjective.id}, ${JSON.stringify(obj.orgObjective || obj.LibraryObjective.objectiveName)})`
+                    )
+                      i.fas.fa-plus.me-1
+                      | Add Outcome
+                    
+                    //- Optional: A delete/remove button for the objective itself
+                    button.btn.btn-sm.btn-outline-danger(
+                      type="button"
+                      onclick=`removeObjective(${obj.id})`
+                    )
+                      i.fas.fa-trash-alt
 
       .card-body.p-4
         if obj.SelectedOutcomes && obj.SelectedOutcomes.length > 0

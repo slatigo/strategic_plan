@@ -2,7 +2,30 @@
  * Strategic Plan Editor JS - Unified Final Version
  * Handles Objectives, Outcomes, Intermediates, Interventions, Outputs, and Actions
  */
+document.getElementById('objectiveForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
 
+    try {
+        const response = await fetch(e.target.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            Swal.fire('Saved!', 'Objective added successfully.', 'success')
+                .then(() => window.location.reload());
+        } else {
+            Swal.fire('Error', result.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Something went wrong', 'error');
+    }
+});
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. GLOBAL UI TOGGLES (Adaptation Logic) ---
     // This looks for any checkbox with class 'adapt-toggle' and shows/hides its specific container
@@ -470,6 +493,7 @@ async function confirmDelete(url, text = "This cannot be undone.") {
 }
 
 // Map the Pug calls to the unified delete helper
+const removeObjective = (id) => confirmDelete(`/mda/plans/objectives/${id}`, "Warning: This will remove the objective and ALL associated outcomes, indicators, and outputs!");
 const removeOutcome = (id) => confirmDelete(`/mda/api/plan/outcome/${id}`, "Warning: This deletes all linked indicators, intermediates, and interventions.");
 const removeIntermediate = (id) => confirmDelete(`/mda/api/plan/intermediate/${id}`);
 const removeIntervention = (id) => confirmDelete(`/mda/api/plan/intervention/${id}`);
@@ -485,6 +509,7 @@ const removeIndicator = (level, id) => {
     confirmDelete(url, `This will remove the ${level} indicator and all its associated targets.`);
 };
 async function prepareIndicatorModal(level, parentId, existingData = null) {
+
     const lwr = level.toLowerCase();
     const config = {
         'outcome': { 
@@ -511,6 +536,7 @@ async function prepareIndicatorModal(level, parentId, existingData = null) {
     }[lwr];
 
     const form = document.getElementById(config.form);
+
     if (!form) return;
 
     form.reset(); 
@@ -521,6 +547,7 @@ async function prepareIndicatorModal(level, parentId, existingData = null) {
     selectEl.innerHTML = '<option>Loading indicators...</option>';
     
     bootstrap.Modal.getOrCreateInstance(document.getElementById(config.modal)).show();
+
 
     try {
         const res = await fetch(config.api);

@@ -69,17 +69,7 @@ router.get('/report-calls/:id/submissions', reportCallController.viewReportSubmi
 // A. THE NATIONAL DASHBOARD (Aggregated view of all MDAs)
 // Example: /npa/report-calls/5/analysis
 router.get('/report-calls/:id/analysis', reportCallController.getNationalAnalysis);
-router.get('/report-calls/:id/analysis/breakdown/:indicatorId', reportCallController.getIndicatorMdaBreakdown);
-// B. THE DRILL-DOWN (View one specific Program/Objective across all MDAs)
-// Example: /npa/report-calls/5/analysis/programme/2
-/*router.get('/report-calls/:id/analysis/programme/:progId', reportCallController.getProgrammeAnalysis);
 
-// C. THE INDICATOR COMPARISON (The "Search" tool we discussed)
-// Example: /npa/report-calls/5/analysis/indicator/KPI-101
-
-router.get('/report-calls/:id/analysis/indicator/:indicatorCode', reportCallController.getIndicatorComparison);*/
-// D. MDA REPORT REVIEW (The Deep Dive)
-// This is where the NPA views the actual performance data (Outcome/Output entries)
 router.get('/reports/:reportId/review', reportCallController.reviewMdaReport);
 router.patch('/api/reports/:reportId/status', reportCallController.updateReportStatus);
 

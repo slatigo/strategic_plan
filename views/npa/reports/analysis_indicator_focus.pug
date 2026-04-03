@@ -1,0 +1,91 @@
+extends ../layout
+
+block npa_content
+  .container-fluid
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        h3.fw-bold Indicator & Action Focus
+        p.text-muted Search and analyze specific performance metrics across the results chain.
+      .d-flex.gap-2
+        span.badge.bg-info.text-dark Total Metrics: #{allMetrics.length}
+
+    //- Search Bar Section
+    .card.border-0.shadow-sm.mb-4
+      .card-body
+        .row.g-3
+          .col-md-8
+            .input-group
+              span.input-group-text.bg-white
+                i.bi.bi-search
+              input#metricSearch.form-control.border-start-0(
+                type="text" 
+                placeholder="Search by Indicator Name or Code (e.g., '01.01' or 'GDP')..."
+              )
+          .col-md-4
+            select#typeFilter.form-select
+              option(value="all") All Types
+              option(value="macro") Macro Indicators
+              option(value="intermediate") Intermediate
+              option(value="output") Output Indicators
+              option(value="action") Financial Actions
+
+    //- Data Table
+    .card.border-0.shadow-sm
+      .table-responsive
+        table.table.table-hover.align-middle#metricsTable
+          thead.bg-light.text-uppercase.x-small
+            tr
+              th Type
+              th Code
+              th Metric Name
+              th.text-center Unit
+              th.text-end Target
+              th.text-end Actual
+              th.text-center Achievement
+              th.text-end
+          tbody
+            each m in allMetrics
+              tr.metric-row(data-type=m.type.toLowerCase())
+                td
+                  span(class=`badge rounded-pill bg-soft-${m.typeColor} text-${m.typeColor} border`) #{m.type}
+                td.fw-bold.text-muted #{m.code}
+                td
+                  div.fw-semibold #{m.name}
+                  if m.parentName
+                    small.text-muted.x-small Parent: #{m.parentName}
+                td.text-center.text-muted #{m.unit || 'UGX'}
+                td.text-end.fw-bold 
+                  //- Use Number() to ensure it's a digit before formatting
+                  | #{Number(m.target || 0).toLocaleString()}
+                td.text-end.text-primary.fw-bold 
+                  | #{Number(m.actualTotal || m.actual || 0).toLocaleString()}
+                td.text-center
+                  - let progress = Math.min(parseFloat(m.achievement), 100)
+                  - let color = progress >= 90 ? 'success' : (progress >= 50 ? 'warning' : 'danger')
+                  .d-flex.flex-column.align-items-center
+                    .progress(style="height: 6px; width: 60px;")
+                      .progress-bar(class=`bg-${color}` style=`width: ${progress}%`)
+                    small(class=`text-${color} fw-bold mt-1`) #{m.achievement}%
+                td.text-end
+                  button.btn.btn-sm.btn-outline-primary.view-mda-performance(
+                    data-bs-toggle="modal" 
+                    data-bs-target="#breakdownModal"
+                    data-metric=JSON.stringify(m)
+                  )
+                    i.bi.bi-building.me-1
+                    | MDAs
+
+    include modals/_breakdown_modal
+
+block append scripts
+  //- External specialized script
+  script(src="/js/npa/npa-analysis.js")
+  
+  //- Inline styles specific to the focus view
+  style.
+    .bg-soft-success { background-color: #d1fae5; color: #065f46; }
+    .bg-soft-primary { background-color: #e0f2fe; color: #075985; }
+    .bg-soft-warning { background-color: #fef3c7; color: #92400e; }
+    .bg-soft-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .x-small { font-size: 0.75rem; }
+    .metric-row:hover { background-color: #f8fafc; cursor: default; }

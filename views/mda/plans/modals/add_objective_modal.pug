@@ -5,17 +5,20 @@
         h5.modal-title Add Strategic Objective
         button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Close")
       .modal-body
-        form#objectiveForm(action=`/mda/plans/${plan.id}/objectives` method="POST")
+        //- Updated action to match your router prefix (assuming /mda is the base)
+        form#objectiveForm(action="/mda/plans/objectives/add")
+          input(type="hidden" name="plan_id" value=plan.id)
+          
           .mb-3
-            label.form-label Select Objective from Library
-            select.form-select.select2(name="objectiveId" required)
+            label.form-label Select Objective
+            select.form-select.select2(name="objective_id" required)
               option(value="") -- Choose Objective --
               each libObj in libraryObjectives
                 option(value=libObj.id) #{libObj.objectiveCode}: #{libObj.objectiveName}
           
           .mb-3
-            label.form-label Adapted Objective (Optional)
-            textarea.form-control(name="orgObjective" rows="2" placeholder="Describe how your MDA interprets this objective...")
+            label.form-label Adapted Objective
+            textarea.form-control(name="org_objective" rows="2")
             
       .modal-footer
         button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
