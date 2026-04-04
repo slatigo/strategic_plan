@@ -25,7 +25,6 @@ app.use(express.urlencoded({ extended: true }));
 // --- 4. Route Mounting ---
 
 // Auth Module (Handles /login and /api/login)
-// Since you chose Option B, this covers both the Pug page and the Logic
 app.use('/', authRoutes); 
 
 // NPA Admin Module (Prefixes all routes with /npa)

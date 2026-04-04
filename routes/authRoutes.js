@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-
+router.get('/', (req, res) => {
+    res.redirect('/login');
+});
 // 1. PAGE RENDERING
 // Access via: http://localhost:3002/login
 router.get('/login', (req, res) => {
