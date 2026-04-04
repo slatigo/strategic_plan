@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       field: 'updatedAt' // Forces Sequelize to use exactly this name
     }
   }, { 
-    tableName: 'BudgetSources',
+    tableName: 'budgetsources',
     underscored: true,
     timestamps: true, // Set to true if your DB has createdAt/updatedAt
     
