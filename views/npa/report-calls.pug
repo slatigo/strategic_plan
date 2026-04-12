@@ -50,75 +50,90 @@ block npa_content
                 th Deadline
                 th.text-end.px-4 Actions
             tbody
-              if reportCalls && reportCalls.length > 0
-                each call in reportCalls
+                if reportCalls && reportCalls.length > 0
+                  each call in reportCalls
+                    //- MAIN DATA ROW
+                    tr
+                      td.px-4
+                        if call.MasterPlan
+                          span.fw-bold.text-primary= `Plan ${call.MasterPlan.fy} / ${parseInt(call.MasterPlan.fy) + 5}`
+                        else
+                          span.text-muted No Linked Plan
+                        
+                        //- Trigger for the hidden description
+                        div.mt-1
+                          button.btn.btn-sm.btn-link.p-0.text-decoration-none(
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target=`#desc-${call.id}`
+                          )
+                            i.fas.fa-chevron-down.me-1
+                            span.small View Instructions
+                      
+                      td
+                        .d-flex.flex-column
+                          span.fw-bold= `FY ${call.reportingYear} / ${parseInt(call.reportingYear) + 1}`
+                          span.badge.bg-info-subtle.text-info.align-self-start.mt-1= call.quarter
+                      
+                      td.text-center
+                        - const s = parseInt(call.countSubmitted || (call.dataValues && call.dataValues.countSubmitted)) || 0
+                        - const a = parseInt(call.countApproved || (call.dataValues && call.dataValues.countApproved)) || 0
+                        - const r = parseInt(call.countRevision || (call.dataValues && call.dataValues.countRevision)) || 0
+                        .d-flex.flex-column.align-items-center
+                          .d-flex.gap-1.mb-1
+                            span.badge.bg-warning.text-dark(title="Submitted")= s
+                            span.badge.bg-success(title="Approved")= a
+                            span.badge.bg-danger(title="Needs Revision")= r
+                          - const totalDone = s + a
+                          - const progress = Math.round((totalDone / totalMdas) * 100) || 0
+                          .progress(style="height: 4px; width: 80px;")
+                            .progress-bar(class=progress < 50 ? 'bg-warning' : 'bg-success' style=`width: ${progress}%`)
+
+                      td
+                        span.badge.rounded-pill(class=call.status === 'Draft' ? 'bg-secondary-subtle text-secondary' : call.status === 'Open' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger')= call.status
+                      
+                      td
+                        - const isOverdue = new Date(call.deadline) < new Date() && call.status === 'Open'
+                        span.small(class=isOverdue ? 'text-danger fw-bold' : '')
+                          i.far.fa-calendar-alt.me-1
+                          | #{new Date(call.deadline).toLocaleDateString('en-GB')}
+                      
+                      td.text-end.px-4
+                        .btn-group.btn-group-sm
+                          //- Clear and descriptive
+                          a.btn.btn-outline-primary(href=`/npa/report-calls/${call.id}/submissions` title="View Submissions")
+                            i.fas.fa-list-ul.me-1
+                            | Submissions
+                          a.btn.btn-primary(href=`/npa/report-calls/${call.id}/analysis`)
+                            i.fas.fa-chart-line
+                          
+                          //- Lifecycle Actions
+                          if call.status === 'Draft'
+                            button.btn.btn-outline-success(onclick=`publishCall(${call.id})`)
+                              i.fas.fa-paper-plane
+                          if call.status === 'Open'
+                            button.btn.btn-outline-warning(onclick=`closeCall(${call.id})`)
+                              i.fas.fa-lock
+                              
+                          button.btn.btn-outline-danger(onclick=`deleteCall(${call.id})`)
+                            i.fas.fa-trash-alt
+                          
+                          - const cleanDeadline = Array.isArray(call.deadline) ? call.deadline : call.deadline
+                          - const editData = JSON.stringify({ id: call.id, planCallId: call.planCallId, reportingYear: call.reportingYear, quarter: call.quarter, deadline: cleanDeadline, description: call.description })
+                          button.btn.btn-outline-secondary(onclick=`openReportModal(${editData})`)
+                            i.fas.fa-edit
+
+                    //- EXPANDABLE ROW
+                    tr
+                      td(colspan="6" class="p-0 border-0")
+                        .collapse(id=`desc-${call.id}`)
+                          .card.card-body.border-0.bg-light.mb-2.mx-3
+                            h6.text-muted.small.text-uppercase Instructions
+                            p.mb-0.small= call.description
+                else
                   tr
-                    td.px-4
-                      if call.MasterPlan
-                        span.fw-bold.text-primary= `Plan ${call.MasterPlan.fy} / ${parseInt(call.MasterPlan.fy) + 5}`
-                      else
-                        span.text-muted No Linked Plan
-                    
-                    td
-                      .d-flex.flex-column
-                        span.fw-bold= `FY ${call.reportingYear} / ${parseInt(call.reportingYear) + 1}`
-                        span.badge.bg-info-subtle.text-info.align-self-start.mt-1= call.quarter
-                    
-                    td.text-center
-                      - const s = parseInt(call.countSubmitted || (call.dataValues && call.dataValues.countSubmitted)) || 0
-                      - const a = parseInt(call.countApproved || (call.dataValues && call.dataValues.countApproved)) || 0
-                      - const r = parseInt(call.countRevision || (call.dataValues && call.dataValues.countRevision)) || 0
-                      .d-flex.flex-column.align-items-center
-                        .d-flex.gap-1.mb-1
-                          span.badge.bg-warning.text-dark(title="Submitted")= s
-                          span.badge.bg-success(title="Approved")= a
-                          span.badge.bg-danger(title="Needs Revision")= r
-                        - const totalDone = s + a
-                        - const progress = Math.round((totalDone / totalMdas) * 100) || 0
-                        .progress(style="height: 4px; width: 80px;")
-                          .progress-bar(class=progress < 50 ? 'bg-warning' : 'bg-success' style=`width: ${progress}%`)
-
-                    td
-                      if call.status === 'Draft'
-                        span.badge.rounded-pill.bg-secondary-subtle.text-secondary Draft
-                      else if call.status === 'Open'
-                        span.badge.rounded-pill.bg-success-subtle.text-success Open
-                      else
-                        span.badge.rounded-pill.bg-danger-subtle.text-danger Closed
-                    
-                    td
-                      - const isOverdue = new Date(call.deadline) < new Date() && call.status === 'Open'
-                      span.small(class=isOverdue ? 'text-danger fw-bold' : '')
-                        i.far.fa-calendar-alt.me-1
-                        | #{new Date(call.deadline).toLocaleDateString('en-GB')}
-                    
-                    td.text-end.px-4
-                      .btn-group.btn-group-sm
-                        //- 1. Compliance/Submissions List (The "Who reported?" view)
-                        a.btn.btn-outline-primary(href=`/npa/report-calls/${call.id}/submissions` title="View Submissions List")
-                          i.fas.fa-list-ul
-                        
-                        //- 2. NEW: National Analysis (The "How are we doing?" view)
-                        a.btn.btn-primary(href=`/npa/report-calls/${call.id}/analysis` title="Global Performance Analysis")
-                          i.fas.fa-chart-line.me-1
-                          | Analysis
-
-                        //- 3. Lifecycle Actions
-                        if call.status === 'Draft'
-                          button.btn.btn-outline-success(onclick=`publishCall(${call.id})` title="Publish Call")
-                            i.fas.fa-paper-plane
-                        
-                        if call.status === 'Open'
-                          button.btn.btn-outline-warning(onclick=`closeCall(${call.id})` title="Close Window")
-                            i.fas.fa-lock
-                            
-                        button.btn.btn-outline-danger(onclick=`deleteCall(${call.id}, '${call.reportingYear} ${call.quarter}')` title="Delete")
-                          i.fas.fa-trash-alt
-
-              else
-                tr
-                  td.text-center.py-5(colspan="6")
-                    h5.text-muted No Reporting Windows Found
+                    td.text-center.py-5(colspan="6")
+                      h5.text-muted No Reporting Windows Found
 
     //- Create Snapshot Modal
     .modal.fade#createReportModal(tabindex="-1" aria-hidden="true")
@@ -159,7 +174,7 @@ block npa_content
 
           .modal-footer.bg-light.border-0
             button.btn.btn-secondary(data-bs-dismiss="modal") Cancel
-            button.btn.btn-primary.px-4(type="button" onclick="saveReportCall()") Create Snapshot
+            button.btn.btn-primary.px-4(type="button" onclick="saveReportCall()") Save
 
 block scripts
   script(src="/js/npa/report-calls.js")
