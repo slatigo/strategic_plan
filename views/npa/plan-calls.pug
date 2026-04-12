@@ -41,11 +41,23 @@ block npa_content
                 th.text-center Submission Breakdown
                 th Status
                 th.text-end.px-4 Actions
+            
             tbody
               each call in calls
+                //- MAIN DATA ROW
                 tr
                   td.px-4.fw-bold= call.fy
-                  td.text-truncate(style="max-width: 200px;")= call.description
+                  
+                  //- Toggle button for description
+                  td
+                    button.btn.btn-sm.btn-link.text-decoration-none(
+                      type="button" 
+                      data-bs-toggle="collapse" 
+                      data-bs-target=`#desc-${call.id}`
+                    )
+                      i.fas.fa-chevron-down.me-1
+                      | View Description
+                  
                   td
                     - const isOverdue = new Date(call.deadline) < new Date() && call.status === 'Open'
                     span(class=isOverdue ? 'text-danger fw-bold' : '') #{new Date(call.deadline).toLocaleDateString()}
@@ -75,20 +87,27 @@ block npa_content
                   
                   td.text-end.px-4
                     .btn-group
-                      //- Main Point of Entry to see the specific MDAs
                       a.btn.btn-sm.btn-primary(href=`/npa/plan-calls/${call.id}/submissions` title="View Submissions")
                         i.fas.fa-users.me-1
                         | View
-                      //- Use JSON.stringify to safely pass the object into the function
-                      - const editData = JSON.stringify({id: call.id, fy: call.fy, deadline: call.deadline, description: call.description})
-                      button.btn.btn-sm.btn-outline-secondary(onclick=`openPlanCallModal(${editData})`)
-                        i.fas.fa-edit
-                     
                       
-                      button.btn.btn-sm(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')`)
+                      - const editData = JSON.stringify({id: call.id, fy: call.fy, deadline: call.deadline, description: call.description})
+                      button.btn.btn-sm.btn-outline-secondary(onclick=`openPlanCallModal(${editData})` title="Edit Call")
+                        i.fas.fa-edit
+                      
+                      button.btn.btn-sm(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')` title="Toggle Status")
                         i.fas(class=call.status === 'Open' ? 'fa-lock' : 'fa-lock-open')
+                        
                       button.btn.btn-sm.btn-outline-danger(onclick=`deletePlanCall(${call.id}, '${call.fy}')` title="Delete Call")
-                          i.fas.fa-trash
+                        i.fas.fa-trash
+
+                //- EXPANDABLE DESCRIPTION ROW
+                tr
+                  td(colspan="6" class="p-0 border-0")
+                    .collapse(id=`desc-${call.id}`)
+                      .card.card-body.border-0.bg-light.mb-3.mx-3
+                        h6.text-muted.small.text-uppercase Description
+                        p.mb-0= call.description
 
   else
     .text-center.py-5
