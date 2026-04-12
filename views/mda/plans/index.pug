@@ -16,7 +16,11 @@ block mda_content
                 //- TOP ROW: Metadata & Actions
                 .d-flex.justify-content-between.align-items-start.mb-3
                   div
-                    span.badge.bg-dark.me-2 FY #{plan.Call ? plan.Call.fy : 'N/A'}
+                    //- Logic: Start = FY (e.g., 2025/2026), End = FY + 4 (e.g., 2029/2030)
+                    - const startYear = parseInt(plan.Call.fy);
+                    - const endYear = startYear + 4;
+                    span.badge.bg-dark.me-2 
+                      | FY #{startYear}/#{startYear + 1} to #{endYear}/#{endYear + 1}
                     h5.fw-bold.d-inline.align-middle #{plan.Programme ? plan.Programme.programmeName : 'Unassigned Programme'}
                     .mt-1
                       small.text-muted.me-3
