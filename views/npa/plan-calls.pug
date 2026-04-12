@@ -79,16 +79,41 @@ block npa_content
                       a.btn.btn-sm.btn-primary(href=`/npa/plan-calls/${call.id}/submissions` title="View Submissions")
                         i.fas.fa-users.me-1
                         | View
-                      
-                      button.btn.btn-sm.btn-outline-secondary(onclick=`editPlanCall(${call.id})`)
+                      //- Use JSON.stringify to safely pass the object into the function
+                      - const editData = JSON.stringify({id: call.id, fy: call.fy, deadline: call.deadline, description: call.description})
+                      button.btn.btn-sm.btn-outline-secondary(onclick=`openPlanCallModal(${editData})`)
                         i.fas.fa-edit
+                     
                       
                       button.btn.btn-sm(class=call.status === 'Open' ? 'btn-outline-warning' : 'btn-outline-success' onclick=`toggleCallStatus(${call.id}, '${call.status === 'Open' ? 'Closed' : 'Open'}')`)
                         i.fas(class=call.status === 'Open' ? 'fa-lock' : 'fa-lock-open')
+                      button.btn.btn-sm.btn-outline-danger(onclick=`deletePlanCall(${call.id}, '${call.fy}')` title="Delete Call")
+                          i.fas.fa-trash
 
   else
     .text-center.py-5
       i.fas.fa-bullhorn.fa-3x.text-light.mb-3
       h4 No Planning Calls Found.
-
-  // ... (Keep your modal as it was)
+  #planCallModal.modal.fade(tabindex="-1")
+    .modal-dialog
+      .modal-content
+        .modal-header
+          h5.modal-title Issue New Plan Call
+          button.btn-close(type="button" data-bs-dismiss="modal")
+        .modal-body
+          form#planCallForm
+            .mb-3
+              label.form-label Fiscal Year (Start Year)
+              input.form-control(name="fy", type="text", placeholder="e.g., 2025")
+            .mb-3
+              label.form-label Deadline
+              input.form-control(name="deadline", type="date")
+            .mb-3
+              label.form-label Description
+              textarea.form-control(name="description")
+        .modal-footer
+          button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Close
+          button.btn.btn-primary(type="button" onclick="savePlanCall()") Save Call
+block scripts
+  // At the bottom of your layout or the view file
+  script(src="/js/npa/plan-call-management.js")
