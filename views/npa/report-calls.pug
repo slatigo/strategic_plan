@@ -111,9 +111,13 @@ block npa_content
                           if call.status === 'Draft'
                             button.btn.btn-outline-success(onclick=`publishCall(${call.id})`)
                               i.fas.fa-paper-plane
-                          if call.status === 'Open'
+                          else if call.status === 'Open'
                             button.btn.btn-outline-warning(onclick=`closeCall(${call.id})`)
                               i.fas.fa-lock
+                          else if call.status === 'Closed'
+                            //- Add a button to allow reopening if needed
+                            button.btn.btn-outline-info(onclick=`reopenCall(${call.id})` title="Re-open Window")
+                              i.fas.fa-lock-open
                               
                           button.btn.btn-outline-danger(onclick=`deleteCall(${call.id})`)
                             i.fas.fa-trash-alt
