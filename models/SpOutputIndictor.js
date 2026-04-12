@@ -4,31 +4,31 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class SpOutputIndicator extends Model {
     static associate(models) {
-      // 1. REVERTED: Link to the Library Indicator using the Integer ID
       this.belongsTo(models.OutputIndicator, { 
         foreignKey: 'outputIndicatorId', 
         as: 'LibraryIndicator' 
       });
 
-      // 2. Link to the Parent Selected Output
       this.belongsTo(models.SpOutput, { 
         foreignKey: 'spOutputId', 
         as: 'SelectedOutput' 
       });
 
-      // 3. Targets
       this.hasMany(models.SpOutputIndicatorTarget, { 
         foreignKey: 'spOutputIndicatorId', 
         as: 'Targets' 
       });
 
-      // Responsible Office Link
       if (models.Office) {
         this.belongsTo(models.Office, {
           foreignKey: 'responsibleOfficeId',
           as: 'ResponsibleOffice'
         });
       }
+    }
+
+    isCustomIndicator() {
+      return this.outputIndicatorId === null;
     }
   }
 
@@ -38,11 +38,10 @@ module.exports = (sequelize) => {
       primaryKey: true,
       autoIncrement: true
     },
-    // REVERTED: Use the ID field that exists in your DB
     outputIndicatorId: { 
       type: DataTypes.INTEGER, 
       field: 'output_indicator_id',
-      allowNull: false 
+      allowNull: true 
     },
     spOutputId: { 
       type: DataTypes.INTEGER, 
@@ -52,8 +51,13 @@ module.exports = (sequelize) => {
     adaptedOutputIndicator: { 
       type: DataTypes.TEXT, 
       field: 'adapted_output_indicator',
-      allowNull: true, 
-      defaultValue: null 
+      allowNull: false 
+    },
+    // NEW: The "Custom" Unit field for MUBS-specific outputs
+    unitOfMeasure: {
+      type: DataTypes.STRING,
+      field: 'unit_of_measure',
+      allowNull: true
     },
     baselineValue: { 
       type: DataTypes.STRING, 
@@ -69,13 +73,31 @@ module.exports = (sequelize) => {
       field: 'data_source',
       allowNull: true
     }
-    // REMOVED: indicatorCode (to prevent SQL 'Unknown column' crash)
   }, { 
     sequelize, 
     modelName: 'SpOutputIndicator', 
     tableName: 'sp_output_indicators', 
     underscored: true,
-    timestamps: false
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    getterMethods: {
+      /**
+       * The Unit Resolver:
+       * 1. Check local unitOfMeasure (Custom).
+       * 2. Otherwise, drill down into NationalAlignment via the Library.
+       */
+      effectiveUnit() {
+        if (this.unitOfMeasure) return this.unitOfMeasure;
+
+        // Ensure 'OutputNational' matches the association alias in OutputIndicator.js
+        if (this.LibraryIndicator && this.LibraryIndicator.OutputNational) {
+          return this.LibraryIndicator.OutputNational.unit_of_measure;
+        }
+
+        return null;
+      }
+    }
   });
 
   return SpOutputIndicator;

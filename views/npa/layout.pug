@@ -56,11 +56,12 @@ html(lang="en")
 
       .main-content.d-flex.flex-column.flex-grow-1
         header.navbar.bg-white.shadow-sm.px-4.py-3.border-bottom.sticky-top
-          h5.mb-0.fw-bold.text-dark= title
-          .d-flex.align-items-center
-            span.me-3.text-muted.small.fw-medium= user.name
-            .rounded-circle.bg-primary.text-white.d-flex.align-items-center.justify-content-center.shadow-sm(style="width: 38px; height: 38px; min-width: 38px;")
-              span.fw-bold(style="font-size: 0.9rem; line-height: 1;")= user.name.charAt(0).toUpperCase()
+          .container-fluid
+            h5.mb-0.fw-bold.text-dark= title
+            
+            //- This div keeps the user menu aligned correctly
+            div.d-flex.align-items-center
+              include ../partials/_user_menu
 
         main.p-4
           block npa_content

@@ -222,32 +222,32 @@ exports.reviewPlanSubmission = async (req, res, next) => {
             include: [
                 ...fullPlanStructure,
                 { model: Mda, as: 'Mda' },
-                // --- ADD THIS BLOCK ---
                 {
                     model: PlanComment,
                     as: 'Comments',
+                    separate: true, // <--- CRITICAL FOR PERFORMANCE
+                    order: [['createdAt', 'ASC']], // Ordering inside the separate include
                     include: [
                         { 
                             model: User, 
                             as: 'Author', 
-                            attributes: ['name', 'role'] // Only get what we need for the UI
+                            attributes: ['name', 'role'] 
                         }
                     ]
                 }
             ],
-            // We keep your existing order and add order for comments (Oldest to Newest)
+            // Keep only the Objective order in the main query
             order: [
-                [{ model: SpObjective, as: 'SelectedObjectives' }, { model: Objective, as: 'LibraryObjective' }, 'objective_code', 'ASC'],
-                [{ model: PlanComment, as: 'Comments' }, 'created_at', 'ASC'] 
+                [{ model: SpObjective, as: 'SelectedObjectives' }, { model: Objective, as: 'LibraryObjective' }, 'objective_code', 'ASC']
             ]
         });
-
+        
         if (!plan) return res.status(404).send("Strategic Plan not found");
 
         const startYear = plan.Call ? parseInt(plan.Call.fy) : new Date().getFullYear(); 
         const years = Array.from({ length: 5 }, (_, i) => startYear + i);
 
-        res.render('npa/review-plan', {
+        res.render('npa/plans/review', {
             title: `Review: ${plan.Mda.name}`,
             plan,
             years,
@@ -261,7 +261,7 @@ exports.submitPlanDecision = async (req, res, next) => {
     try {
         const { planId } = req.params;
         const { status, remarks } = req.body;
-
+      
         const plan = await StrategicPlan.findByPk(planId);
         if (!plan) return res.status(404).json({ status: 'fail', message: 'Plan not found' });
 

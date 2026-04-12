@@ -4,41 +4,59 @@
       .modal-header.bg-primary.text-white
         h5.modal-title 
           i.fas.fa-link.me-2
-          | Link Outcome Indicator & Set Targets
+          | Set Indicator & Targets
         button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
       .modal-body
-        form#outcomeIndicatorForm(action="/mda/plans/indicators/save" method="POST")
+        form#outcomeIndicatorForm
           input#modal_outcome_parent_id(type="hidden" name="spOutcomeId")
           input(type="hidden" name="id") 
           
           .row
             .col-md-12.mb-3
-              label.form-label.fw-bold Select Indicator from Library
-              .input-group
-                select#outcome_indicator_select.form-select(name="outcomeIndicatorId" required)
-                  option(value="") -- Select --
-                span#outcome_unit_badge.input-group-text.bg-light.text-muted.small Unit: ---
-            
-            .col-md-12.mb-3
-              .form-check.form-switch.mb-2
-                input#outcome_adapt_toggle.form-check-input.adapt-toggle(type="checkbox" name="is_adapted" role="switch" data-target-container="outcome_adaptation_container")
-                label.form-check-label.fw-bold(for="outcome_adapt_toggle") Adapt this indicator name?
-              #outcome_adaptation_container(style="display: none;")
-                textarea#outcome_adapted_name.form-control(name="adaptedOutcomeIndicator" rows="2" placeholder="Modify the indicator name...")
+              .d-flex.justify-content-between.align-items-center.mb-2
+                label.form-label.fw-bold Objective Indicator
+                .form-check.form-switch
+                  input#outcome_custom_toggle.form-check-input(type="checkbox" name="is_custom" role="switch")
+                  label.form-check-label.small.text-danger.fw-bold(for="outcome_custom_toggle") Not in Library? (Custom)
+
+              //- 1. Library Selection Mode
+              #outcome_library_container
+                .input-group
+                  select#outcome_indicator_select.form-select(name="outcomeIndicatorId" required)
+                    option(value="") -- Select from Library --
+                  span#outcome_unit_badge.input-group-text.bg-light.text-muted.small.unit-label Unit: ---
+                
+                .form-check.form-switch.mt-2.mb-2
+                  input#outcome_adapt_toggle.form-check-input.adapt-toggle(type="checkbox" name="is_adapted" role="switch" data-target-container="outcome_adaptation_container")
+                  label.form-check-label.small(for="outcome_adapt_toggle") Adapt this library name?
+                #outcome_adaptation_container(style="display: none;")
+                  textarea#outcome_adapted_name.form-control(name="adaptedOutcomeIndicator" rows="2" placeholder="Modify the indicator name for your institution...")
+
+              //- 2. Custom Input Mode
+              #outcome_custom_container(style="display: none;")
+                .row.g-2
+                  .col-md-8
+                    label.x-small.text-muted Custom Indicator Name
+                    input#outcome_custom_name.form-control(type="text" name="customIndicatorName" placeholder="Enter custom indicator name...")
+                  .col-md-4
+                    label.x-small.text-muted Unit of Measure
+                    select#outcome_custom_unit.form-select(name="customUnit")
+                      option(value="") -- Select Unit --
+                      each uVal in (unitOfMeasures || [])
+                        option(value=uVal) #{uVal}
 
             .col-md-4.mb-3
-              label.form-label.fw-bold Responsible Office/Unit
+              label.form-label.fw-bold Responsible Office
               select.form-select(name="responsibleOfficeId" required)
                 option(value="") -- Select Office --
-                - if (offices && offices.length > 0)
-                  - for (var i = 0; i < offices.length; i++)
-                    option(value=offices[i].id) #{offices[i].name}
+                each dept in (offices || [])
+                  option(value=dept.id) #{dept.name}
 
             .col-md-4.mb-3
               label.form-label.fw-bold Baseline Value
               .input-group
-                input#outcome_baseline_input.form-control(type="text" name="baselineValue" placeholder="Wait for selection...")
-                span.input-group-text.unit-append.bg-light.small ---
+                input#outcome_baseline_input.form-control(type="text" name="baselineValue" placeholder="0.00")
+                span.input-group-text.bg-light.small.unit-label ---
             
             .col-md-4.mb-3
               label.form-label.fw-bold Data Source
@@ -52,27 +70,28 @@
               | Annual Targets
             span.badge.bg-light.text-primary.border.px-3.small
               i.fas.fa-info-circle.me-1
-              | Blue values are National Development Plan (NDP) Benchmarks
+              | Blue values = NDP Benchmarks (Library Only)
 
-          //- 1. NATIONAL REFERENCE ROW
-          .row.bg-light.rounded.p-3.mb-3.border.mx-0.g-2
-            //- We put the array directly in the loop to avoid the "with expression" error
-            - for (var k = 2025; k <= 2029; k++)
-              .col.text-center
-                label.x-small.text-uppercase.text-muted.d-block NDP #{k}
-                div.fw-bold.small.text-primary(id=`nat_val_${k}`) --
-          
-          //- 2. MDA INPUT ROW
+          #national_reference_row.row.bg-light.rounded.p-3.mb-3.border.mx-0.g-2
+            if years && years.length > 0
+              each yr in years
+                .col.text-center
+                  label.x-small.text-uppercase.text-muted.d-block NDP #{yr}
+                  div.fw-bold.small.text-primary.nat-val(id=`nat_val_${yr}`) --
+            else
+              .col-12.text-center.text-muted.small No planning years found.
+
           .row.g-2
-            - for (var l = 2025; l <= 2029; l++)
-              .col
-                label.small.form-label.fw-bold #{l}
-                .input-group.input-group-sm
-                  input.form-control(type="text" name=`targets[${l}]` placeholder="0.00")
-                  span.input-group-text.unit-append.x-small ---
+            if years && years.length > 0
+              each yr in years
+                .col
+                  label.small.form-label.fw-bold #{yr}
+                  .input-group.input-group-sm
+                    input.form-control(type="text" name=`targets[${yr}]` placeholder="0.00")
+                    span.input-group-text.bg-light.x-small.unit-label ---
                 
       .modal-footer.bg-light
         button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Close
         button.btn.btn-primary.px-4(type="submit" form="outcomeIndicatorForm") 
-          i.fas.fa-save.me-2
+          i.fas.fa-save.me-2  
           | Save Indicator

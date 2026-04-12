@@ -1,77 +1,73 @@
-//- views/npa/reports/review.pug
 extends ../layout
 
 block npa_content
-  
-  - isLocked =true
-  
+  //- 1. FLOATING TOGGLE BUTTON
+  button.btn.btn-primary.btn-lg.rounded-circle.shadow-lg.position-fixed(
+    type="button" 
+    data-bs-toggle="offcanvas" 
+    data-bs-target="#reviewDrawer" 
+    style="bottom: 30px; right: 30px; z-index: 1050; width: 60px; height: 60px; border: none;"
+  )
+    i.fas.fa-comments
+
+  //- 2. OFFCANVAS DRAWER (The "Review Sidebar")
+  #reviewDrawer.offcanvas.offcanvas-end(tabindex="-1" aria-labelledby="reviewDrawerLabel" style="width: 450px;")
+    .offcanvas-header.bg-primary.text-white
+      h5#reviewDrawerLabel.offcanvas-title 
+        i.fas.fa-history.me-2
+        | Review Timeline
+      button.btn-close.btn-close-white(type="button" data-bs-dismiss="offcanvas")
+    
+    .offcanvas-body.p-0
+      //- Comment History
+      .comment-thread.p-3(style="height: 60vh; overflow-y: auto; background: #f8f9fa;")
+        if report.Comments && report.Comments.length > 0
+          each comment in report.Comments
+            .comment-item.mb-3.pb-2.border-bottom
+              .d-flex.justify-content-between.align-items-start
+                small.fw-bold(class=comment.isAdminComment ? 'text-primary' : 'text-success')
+                  | #{comment.Author ? comment.Author.name : 'System'} 
+                small.text-muted(style="font-size: 0.7rem;") 
+                  | #{new Date(comment.createdAt).toLocaleDateString()}
+              p.small.mb-1.text-dark= comment.message
+              if comment.statusAtTime
+                span.badge.text-uppercase(style="font-size: 0.65rem;" class=comment.statusAtTime === 'Approved' ? 'bg-success' : 'bg-warning text-dark')
+                  | #{comment.statusAtTime}
+        else
+          .text-center.py-4
+            i.fas.fa-comments.text-muted.fa-2x.mb-2
+            p.text-muted.small No history recorded yet.
+
+      //- Decision Toolbox
+      if report.status !== 'Approved'
+        .p-3.border-top.bg-white
+          label.small.fw-bold.mb-2 Add Remark / Decision
+          textarea#remarks.form-control.form-control-sm.mb-3(rows="4" placeholder="Type your feedback here...")
+          .d-grid.gap-2
+            button.btn.btn-sm.btn-success(onclick="handleDecision('Approved')") 
+              i.fas.fa-check.me-1
+              | Approve Report
+            button.btn.btn-sm.btn-warning(onclick="handleDecision('Needs Revision')")
+              i.fas.fa-undo.me-1
+              | Send for Revision
+      else
+        .p-4.text-center.bg-light
+          .text-success.mb-2: i.fas.fa-check-circle.fa-3x
+          h6.fw-bold.text-success Report Approved
+
+  //- 3. MAIN CONTENT
   .container-fluid.py-4
-    .row
-      //- LEFT COLUMN: THE DATA GRID (9/12 width)
-      .col-lg-9
-        .d-flex.justify-content-between.align-items-center.mb-4
-          div
-            span.badge.bg-dark.mb-2 Quarterly Progress Review
-            h2.mb-0 #{report.Mda ? report.Mda.name : 'Unknown MDA'}
-            p.text-muted 
-              | Report for FY: #{report.Call ? report.Call.reportingYear : 'N/A'} - #{report.Call ? report.Call.quarter : 'N/A'}
+    .d-flex.justify-content-between.align-items-center.mb-4
+      div
+        span.badge.bg-dark.mb-2 Quarterly Progress Review
+        h2.mb-0 #{report.Mda ? report.Mda.name : 'Unknown MDA'}
+        p.text-muted FY: #{report.Call ? report.Call.reportingYear : 'N/A'} - Quarter: #{report.Call ? report.Call.quarter : 'N/A'}
 
-        form#reportForm(method="POST" action="/npa/reports/submit-review")
-          input(type="hidden" name="reportId" value=report.id)
-          //- Shared Grid stays here
-          include ../../partials/_report_grid_full
+    form#reportForm(method="POST" action="/npa/reports/submit-review")
+      input(type="hidden" name="reportId" value=report.id)
+      include ../../partials/_report_grid_full
 
-      //- RIGHT COLUMN: THE REVIEWER SIDEBAR (3/12 width)
-      .col-lg-3
-        .card.shadow-sm.sticky-top(style="top: 20px;")
-          .card-header.bg-primary.text-white
-            i.fas.fa-history.me-2
-            | Review Timeline
-          
-          .card-body.p-0
-            //- 1. THE HISTORY LIST (The "Trail")
-            .comment-thread.p-3(style="max-height: 450px; overflow-y: auto; background: #f8f9fa;")
-              if report.Comments && report.Comments.length > 0
-                each comment in report.Comments
-                  .comment-item.mb-3.pb-2.border-bottom
-                    .d-flex.justify-content-between.align-items-start
-                      small.fw-bold(class=comment.isAdminComment ? 'text-primary' : 'text-success')
-                        | #{comment.Author ? comment.Author.name : 'System'} 
-                      small.text-muted(style="font-size: 0.7rem;") 
-                        | #{new Date(comment.createdAt).toLocaleDateString()}
-                    
-                    p.small.mb-1.text-dark= comment.message
-                    
-                    if comment.statusAtTime
-                      span.badge.text-uppercase(style="font-size: 0.65rem;" class=comment.statusAtTime === 'Approved' ? 'bg-success' : 'bg-warning text-dark')
-                        | #{comment.statusAtTime}
-              else
-                .text-center.py-4
-                  i.fas.fa-comments.text-muted.fa-2x.mb-2
-                  p.text-muted.small No history recorded yet.
-
-            //- 2. THE ACTION BOX (Decision Toolbox)
-            if report.status !== 'Approved'
-              .p-3.border-top.bg-white
-                label.small.fw-bold.mb-2 Add Remark / Decision
-                textarea#remarks.form-control.form-control-sm.mb-3(rows="4" placeholder="Type your feedback here...")
-                
-                .d-grid.gap-2
-                  button.btn.btn-sm.btn-success(onclick="handleDecision('Approved')") 
-                    i.fas.fa-check.me-1
-                    | Approve Report
-                  button.btn.btn-sm.btn-warning(onclick="handleDecision('Needs Revision')")
-                    i.fas.fa-undo.me-1
-                    | Send for Revision
-            else
-              .p-4.text-center.bg-light
-                .text-success.mb-2
-                  i.fas.fa-check-circle.fa-3x
-                h6.fw-bold.text-success Report Approved
 block scripts
   script.
-    window.reportConfig = {
-      id: "#{report.id}"
-    };
-  //- Now pull in the JS file you shared
+    window.reportConfig = { id: "#{report.id}" };
   script(src="/js/npa/review-report.js")

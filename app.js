@@ -3,12 +3,15 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const session = require('express-session'); // Add this
+const flash = require('connect-flash');
 const db = require('./models');
 
 // --- 1. Import Master Route Modules ---
 const authRoutes = require('./routes/authRoutes'); // Combined View + API
 const npaRoutes = require('./routes/npaRoutes');   // Specialized NPA Module
 const mdaRoutes = require('./routes/mdaRoutes')
+const profileRoutes = require('./routes/profileRoutes');
 const app = express();
 
 // --- 2. View Engine & Static Files ---
@@ -16,12 +19,28 @@ app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- 3. Global Middleware ---
+/// --- 3. Global Middleware ---
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ADD THIS BLOCK: Initialize session first
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your_secret_key',
+    resave: false,
+    saveUninitialized: false, // Recommended for auth-based apps
+    cookie: { secure: false } // Set to true if using HTTPS
+}));
+
+// NOW initialize flash (it relies on the session middleware above)
+app.use(flash());
+
+// Helper to make flash messages available in all views
+app.use((req, res, next) => {
+    res.locals.messages = req.flash();
+    next();
+});
 // --- 4. Route Mounting ---
 
 // Auth Module (Handles /login and /api/login)
@@ -31,6 +50,7 @@ app.use('/', authRoutes);
 // Access via: /npa/dashboard, /npa/api/plan-calls, etc.
 app.use('/npa', npaRoutes); 
 app.use('/mda', mdaRoutes); // Handles all /mda/* paths
+app.use('/profile', profileRoutes);
 // --- 5. 404 Handler ---
 // Use the AppError class here for consistency
 const AppError = require('./utils/appError'); 

@@ -1,10 +1,18 @@
-- const ioLib = io.LibraryIntermediate || {}
+//- Your Intermediate Outcome wrapper
 .intermediate-item.ps-3.mb-4.border-start.border-3.border-info.ms-4
   small.text-info.fw-bold.x-small #{ioLib.intermediateOutcomeCode || 'INT'}
   h6.mb-2.small.fw-bold #{ioLib.intermediateOutcome || 'Intermediate Outcome'}
   
   if io.SelectedIndicators && io.SelectedIndicators.length > 0
     .ms-3.mb-3
+      //- HEADER: Only shown once per Intermediate Outcome group
+      .row.g-2.mb-2.text-muted.small.fw-bold.border-bottom.pb-2
+        .col-md-4 Intermediate Outcome Indicator
+        .col-md-1.text-center Unit
+        .col-md-2.text-center Target (#{reportingFY || 'N/A'})
+        .col-md-2.text-center Actual Value
+        .col-md-3 Remarks
+
+      //- ROWS: Loop through the indicators calling the partial
       each iInd in io.SelectedIndicators
-        //- Instead of 15 lines of HTML here, we use one line:
         include ./_intermediate_indicators_row

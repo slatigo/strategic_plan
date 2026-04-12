@@ -7,42 +7,56 @@
           | Link Intermediate Indicator & Set Targets
         button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
       .modal-body
-        form#intIndicatorForm(action="/mda/plans/indicators/save" method="POST")
-            
+        form#intIndicatorForm
           input#modal_intermediate_parent_id(type="hidden" name="spIntermediateOutcomeId")
           input(type="hidden" name="id") 
           
           .row
             .col-md-12.mb-3
-              label.form-label.fw-bold Select Indicator from Library
-              .input-group
-                select#intermediate_indicator_select.form-select(name="intermediateOutcomeIndicatorId" required)
-                  option(value="") -- Select from Library --
-                //- JS updates this badge
-                span#int_unit_badge.input-group-text.bg-light.text-muted.small Unit: ---
-            
-            .col-md-12.mb-3
-              .form-check.form-switch.mb-2
-                input#int_adapt_toggle.form-check-input.adapt-toggle(type="checkbox" name="is_adapted" role="switch" data-target-container="int_adaptation_container")
-                label.form-check-label.fw-bold(for="int_adapt_toggle") Adapt this indicator name?
-              #int_adaptation_container(style="display: none;")
-                label.form-label.text-info.small Customized Intermediate Indicator Name
-                textarea#int_adapted_name.form-control(name="adaptedIntermediateOutcomeIndicator" rows="2" placeholder="Modify name for institutional context...")
+              .d-flex.justify-content-between.align-items-center.mb-2
+                label.form-label.fw-bold Intermediate Indicator
+                .form-check.form-switch
+                  input#int_custom_toggle.form-check-input(type="checkbox" name="is_custom" role="switch")
+                  label.form-check-label.small.text-danger.fw-bold(for="int_custom_toggle") Not in Library? (Custom)
+
+              //- 1. Library Selection Mode
+              #int_library_container
+                .input-group
+                  select#intermediate_indicator_select.form-select(name="intermediateOutcomeIndicatorId" required)
+                    option(value="") -- Select from Library --
+                  span#int_unit_badge.input-group-text.bg-light.text-muted.small.unit-label Unit: ---
+                
+                .form-check.form-switch.mt-2.mb-2
+                  input#int_adapt_toggle.form-check-input.adapt-toggle(type="checkbox" name="is_adapted" role="switch" data-target-container="int_adaptation_container")
+                  label.form-check-label.small(for="int_adapt_toggle") Adapt this library name?
+                #int_adaptation_container(style="display: none;")
+                  textarea#int_adapted_name.form-control(name="adaptedIntermediateOutcomeIndicator" rows="2" placeholder="Modify name for institutional context...")
+
+              //- 2. Custom Input Mode
+              #int_custom_container(style="display: none;")
+                .row.g-2
+                  .col-md-8
+                    label.x-small.text-muted Custom Intermediate Indicator Name
+                    input#int_custom_name.form-control(type="text" name="customIndicatorName" placeholder="Enter custom indicator name...")
+                  .col-md-4
+                    label.x-small.text-muted Unit of Measure
+                    select#int_custom_unit.form-select(name="customUnit")
+                      option(value="") -- Select Unit --
+                      each uVal in (unitOfMeasures || [])
+                        option(value=uVal) #{uVal}
 
             .col-md-4.mb-3
               label.form-label.fw-bold Responsible Office
               select.form-select(name="responsibleOfficeId" required)
                 option(value="") -- Select Office --
-                //- NATIVE JS LOOP to prevent parse errors
-                - if (offices && offices.length > 0)
-                  - for (var i = 0; i < offices.length; i++)
-                    option(value=offices[i].id) #{offices[i].name}
+                each dept in (offices || [])
+                  option(value=dept.id) #{dept.name}
 
             .col-md-4.mb-3
               label.form-label.fw-bold Baseline Value
               .input-group
-                input#intermediate_baseline_input.form-control(type="text" name="baselineValue" placeholder="Wait for selection...")
-                span.input-group-text.unit-append.bg-light.small ---
+                input#intermediate_baseline_input.form-control(type="text" name="baselineValue" placeholder="0.00")
+                span.input-group-text.bg-light.small.unit-label ---
             
             .col-md-4.mb-3
               label.form-label.fw-bold Data Source
@@ -50,33 +64,21 @@
           
           hr
           
-          .d-flex.justify-content-between.align-items-center.mb-3
-            h6.fw-bold.mb-0 
-              i.fas.fa-bullseye.me-2.text-info
-              | Annual Targets (Intermediate)
-            span.badge.bg-light.text-info.border.px-3.small
-              i.fas.fa-info-circle.me-1
-              | Blue values are NDP Benchmarks
-
-          //- 1. NATIONAL REFERENCE ROW (NDP Targets)
-          .row.bg-light.rounded.p-3.mb-3.border.mx-0.g-2
-            //- Hardcoded range to prevent "years is not defined" error
-            - for (var k = 2025; k <= 2029; k++)
-              .col.text-center
-                label.x-small.text-uppercase.text-muted.d-block NDP #{k}
-                div.fw-bold.small.text-info(id=`int_nat_val_${k}`) --
-          
-          //- 2. MDA INPUT ROW (Target entry fields)
+          h6.fw-bold.mb-3 Annual Targets (Intermediate)
           .row.g-2
-            - for (var l = 2025; l <= 2029; l++)
-              .col
-                label.small.form-label.fw-bold #{l}
-                .input-group.input-group-sm
-                  input.form-control(type="text" name=`targets[${l}]` placeholder="0.00")
-                  span.input-group-text.unit-append.x-small ---
+            if years && years.length > 0
+              each yr in years
+                .col
+                  label.small.form-label.fw-bold #{yr}
+                  .input-group.input-group-sm
+                    input.form-control(type="text" name=`targets[${yr}]` placeholder="0.00")
+                    span.input-group-text.x-small.unit-label ---
+            else
+              .col-12
+                p.text-danger.small No planning years defined.
                 
       .modal-footer.bg-light
         button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
         button.btn.btn-info.text-white.px-4(type="submit" form="intIndicatorForm") 
-          i.fas.fa-save.me-2
+          i.fas.fa-save.me-2  
           | Save Indicator

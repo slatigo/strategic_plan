@@ -4,11 +4,7 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class SpOutcomeIndicator extends Model {
     static associate(models) {
-      /**
-       * REVERTED: We use outcomeIndicatorId (Integer) to link to the Library.
-       * The "National Data" will be accessed via the LibraryIndicator 
-       * because the Library table is the one that actually holds the code.
-       */
+      // Step 1: Link to the Library
       this.belongsTo(models.OutcomeIndicator, { 
         foreignKey: 'outcomeIndicatorId', 
         as: 'LibraryIndicator' 
@@ -31,6 +27,10 @@ module.exports = (sequelize, DataTypes) => {
         });
       }
     }
+
+    isCustomIndicator() {
+      return this.outcomeIndicatorId === null;
+    }
   }
 
   SpOutcomeIndicator.init({
@@ -39,19 +39,26 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    // REVERTED: Link via the existing Integer ID
     outcomeIndicatorId: { 
       type: DataTypes.INTEGER, 
       field: 'outcome_indicator_id',
-      allowNull: false
+      allowNull: true 
     },
     spOutcomeId: { 
       type: DataTypes.INTEGER, 
-      field: 'sp_outcome_id' 
+      field: 'sp_outcome_id',
+      allowNull: false
     },
     adaptedOutcomeIndicator: { 
       type: DataTypes.TEXT, 
-      field: 'adapted_outcome_indicator' 
+      field: 'adapted_outcome_indicator',
+      allowNull: false 
+    },
+    // The "Internal" Unit field for MUBS Custom Indicators
+    unitOfMeasure: {
+      type: DataTypes.STRING,
+      field: 'unit_of_measure',
+      allowNull: true
     },
     baselineValue: { 
       type: DataTypes.STRING, 
@@ -65,13 +72,31 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT, 
       field: 'data_source' 
     }
-    // REMOVED: indicatorCode (since it doesn't exist in your DB table)
   }, { 
     sequelize, 
     modelName: 'SpOutcomeIndicator', 
     tableName: 'sp_outcome_indicators', 
     underscored: true,
-    timestamps: false
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    getterMethods: {
+      /**
+       * The Multi-Table Unit Resolver:
+       * 1. Returns this.unitOfMeasure if planner added a custom one.
+       * 2. Otherwise, goes Sp -> LibraryIndicator -> OutcomeNational -> unit_of_measure.
+       */
+      effectiveUnit() {
+        if (this.unitOfMeasure) return this.unitOfMeasure;
+
+        // Note: OutcomeNational matches the 'as' alias in your OutcomeIndicator model
+        if (this.LibraryIndicator && this.LibraryIndicator.OutcomeNational) {
+          return this.LibraryIndicator.OutcomeNational.unit_of_measure;
+        }
+
+        return null;
+      }
+    }
   });
 
   return SpOutcomeIndicator;

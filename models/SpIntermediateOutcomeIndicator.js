@@ -4,11 +4,6 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class SpIntermediateOutcomeIndicator extends Model {
     static associate(models) {
-      /**
-       * REVERTED: Join back using the Integer ID.
-       * This matches your current DB structure. The National data 
-       * will be fetched through this LibraryIndicator in the controller.
-       */
       if (models.IntermediateOutcomeIndicator) {
         this.belongsTo(models.IntermediateOutcomeIndicator, { 
           foreignKey: 'intermediateOutcomeIndicatorId', 
@@ -37,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
         });
       }
     }
+
+    isCustomIndicator() {
+      return this.intermediateOutcomeIndicatorId === null;
+    }
   }
 
   SpIntermediateOutcomeIndicator.init({
@@ -45,21 +44,26 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    // REVERTED: Using the ID field that actually exists in your DB
     intermediateOutcomeIndicatorId: { 
       type: DataTypes.INTEGER, 
       field: 'intermediate_outcome_indicator_id',
-      allowNull: false
+      allowNull: true // Permissive for custom MUBS indicators
     },
     spIntermediateOutcomeId: { 
       type: DataTypes.INTEGER, 
-      field: 'sp_intermediate_outcome_id' 
+      field: 'sp_intermediate_outcome_id',
+      allowNull: false 
     },
     adaptedIntermediateOutcomeIndicator: { 
       type: DataTypes.TEXT, 
       field: 'adapted_intermediate_outcome_indicator',
-      allowNull: true,
-      defaultValue: null
+      allowNull: false 
+    },
+    // NEW: The "Custom" Unit field
+    unitOfMeasure: {
+      type: DataTypes.STRING,
+      field: 'unit_of_measure',
+      allowNull: true
     },
     baselineValue: { 
       type: DataTypes.STRING, 
@@ -75,13 +79,31 @@ module.exports = (sequelize, DataTypes) => {
       field: 'data_source',
       allowNull: true
     }
-    // REMOVED: indicatorCode (as it is not a column in this table)
   }, { 
     sequelize, 
     modelName: 'SpIntermediateOutcomeIndicator', 
     tableName: 'sp_intermediate_outcome_indicators', 
     underscored: true,
-    timestamps: false
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    getterMethods: {
+      /**
+       * The Unit Resolver:
+       * 1. Returns local unitOfMeasure if it's a Custom indicator.
+       * 2. Otherwise, drills down into the NationalAlignment table via the Library.
+       */
+      effectiveUnit() {
+        if (this.unitOfMeasure) return this.unitOfMeasure;
+
+        // Ensure the alias 'IntermediateNational' matches what's in your Library model
+        if (this.LibraryIndicator && this.LibraryIndicator.IntermediateNational) {
+          return this.LibraryIndicator.IntermediateNational.unit_of_measure;
+        }
+
+        return null;
+      }
+    }
   });
 
   return SpIntermediateOutcomeIndicator;

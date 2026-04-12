@@ -3,40 +3,40 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
   each obj in plan.SelectedObjectives
     .card.shadow-sm.mb-5.border-start.border-4.border-primary
       .card-header.bg-white.py-3.border-bottom-0
-            .row.align-items-center
-              .col
-                //- National Context Row
-                .d-flex.align-items-center.mb-2
-                  span.badge.bg-soft-primary.text-primary.border.border-primary.me-2
-                    i.fas.fa-landmark.me-1
-                    | NDP Objective #{obj.LibraryObjective.objectiveCode}
-                  small.text-muted.fw-bold.text-uppercase National Standard
-                
-                //- The National Objective Name (Reference)
-                h6.text-muted.mb-2.fw-normal
-                  | #{obj.LibraryObjective.objectiveName}
-                
-                //- The MDA Interpretation (Focus)
-                h5.card-title.mb-0.fw-bold.text-dark
-                  i.fas.fa-arrow-right.me-2.text-primary.small
-                  | #{obj.orgObjective || obj.LibraryObjective.objectiveName}
+        .row.align-items-center
+          .col
+            //- National Context Row
+            .d-flex.align-items-center.mb-2
+              span.badge.bg-soft-primary.text-primary.border.border-primary.me-2
+                i.fas.fa-landmark.me-1
+                //- Objective is usually always from Library, but safety first
+                | NDP Objective #{obj.LibraryObjective ? obj.LibraryObjective.objectiveCode : 'N/A'}
+              small.text-muted.fw-bold.text-uppercase National Standard
+            
+            //- The National Objective Name (Reference)
+            h6.text-muted.mb-2.fw-normal
+              | #{obj.LibraryObjective ? obj.LibraryObjective.objectiveName : 'Custom Objective'}
+            
+            //- The MDA Interpretation (Focus)
+            h5.card-title.mb-0.fw-bold.text-dark
+              i.fas.fa-arrow-right.me-2.text-primary.small
+              | #{obj.orgObjective || (obj.LibraryObjective ? obj.LibraryObjective.objectiveName : 'Untitled')}
 
-              .col-auto
-                if !isLocked
-                  .btn-group
-                    button.btn.btn-sm.btn-outline-success(
-                      type="button"
-                      onclick=`prepareOutcomeModal(${obj.id}, ${obj.LibraryObjective.id}, ${JSON.stringify(obj.orgObjective || obj.LibraryObjective.objectiveName)})`
-                    )
-                      i.fas.fa-plus.me-1
-                      | Add Outcome
-                    
-                    //- Optional: A delete/remove button for the objective itself
-                    button.btn.btn-sm.btn-outline-danger(
-                      type="button"
-                      onclick=`removeObjective(${obj.id})`
-                    )
-                      i.fas.fa-trash-alt
+          .col-auto
+            if !isLocked
+              .btn-group
+                button.btn.btn-sm.btn-outline-success(
+                  type="button"
+                  onclick=`prepareOutcomeModal(${obj.id}, ${obj.LibraryObjective ? obj.LibraryObjective.id : 'null'}, ${JSON.stringify(obj.orgObjective || (obj.LibraryObjective ? obj.LibraryObjective.objectiveName : ''))})`
+                )
+                  i.fas.fa-plus.me-1
+                  | Add Outcome
+                
+                button.btn.btn-sm.btn-outline-danger(
+                  type="button"
+                  onclick=`removeObjective(${obj.id})`
+                )
+                  i.fas.fa-trash-alt
 
       .card-body.p-4
         if obj.SelectedOutcomes && obj.SelectedOutcomes.length > 0
@@ -45,8 +45,12 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
               .card-header.bg-light.border-bottom.py-3
                 .d-flex.justify-content-between.align-items-center
                   div
-                    span.badge.bg-info.text-dark.mb-1 OUTCOME: #{oc.LibraryOutcome.outcomeCode}
-                    h6.fw-bold.mb-0= oc.LibraryOutcome.outcomeName
+                    if oc.LibraryOutcome
+                      span.badge.bg-info.text-dark.mb-1 OUTCOME: #{oc.LibraryOutcome.outcomeCode}
+                      h6.fw-bold.mb-0= oc.LibraryOutcome.outcomeName
+                    else
+                      span.badge.bg-secondary.text-white.mb-1 CUSTOM OUTCOME
+                      h6.fw-bold.mb-0= oc.adaptedOutcomeIndicator
                   if !isLocked
                     .btn-group
                       button.btn.btn-xs.btn-outline-primary(onclick=`prepareIndicatorModal('Outcome', ${oc.id})`) 
@@ -77,8 +81,12 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
                       .intermediate-item.ps-3.mb-4.border-start.border-3.border-info
                         .d-flex.justify-content-between.align-items-start
                           div
-                            small.text-info.fw-bold.x-small= io.LibraryIntermediate.intermediateOutcomeCode
-                            h6.mb-1.small.fw-bold= io.LibraryIntermediate.intermediateOutcome
+                            if io.LibraryIntermediate
+                              small.text-info.fw-bold.x-small= io.LibraryIntermediate.intermediateOutcomeCode
+                              h6.mb-1.small.fw-bold= io.LibraryIntermediate.intermediateOutcome
+                            else
+                              small.text-secondary.fw-bold.x-small CUSTOM INTERMEDIATE
+                              h6.mb-1.small.fw-bold= io.adaptedIntermediateOutcomeIndicator
                           if !isLocked
                             .btn-group
                               button.btn.btn-link.btn-sm.text-info.p-0.me-2(onclick=`prepareIndicatorModal('Intermediate', ${io.id})`) 
@@ -100,7 +108,10 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
                             each inv in io.SelectedInterventions
                               .intervention-card.p-3.bg-light.border.rounded.mb-3
                                 .d-flex.justify-content-between
-                                  h6.small.fw-bold.text-success INTERVENTION: #{inv.LibraryIntervention.interventionCode}
+                                  if inv.LibraryIntervention
+                                    h6.small.fw-bold.text-success INTERVENTION: #{inv.LibraryIntervention.interventionCode}
+                                  else
+                                    h6.small.fw-bold.text-secondary CUSTOM INTERVENTION
                                   if !isLocked
                                     .btn-group
                                       button.btn.btn-xs.btn-outline-success(onclick=`prepareOutputModal(${inv.id})`)
@@ -108,8 +119,8 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
                                         | + Output
                                       button.btn.btn-xs.btn-outline-danger.ms-2(onclick=`removeIntervention(${inv.id})`)
                                         i.fas.fa-trash
-                                p.small.mb-2= inv.LibraryIntervention.intervention
-
+                                p.small.mb-2= inv.LibraryIntervention ? inv.LibraryIntervention.intervention : inv.adaptedIntervention
+                                
                                 //- 4. OUTPUTS
                                 if inv.SelectedOutputs && inv.SelectedOutputs.length > 0
                                   .mt-3
@@ -118,7 +129,10 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
                                         .d-flex.justify-content-between.align-items-center.mb-2
                                           h6.small.fw-bold.text-primary.mb-0 
                                             i.fas.fa-caret-right.me-2
-                                            | OUTPUT: #{outp.LibraryOutput.output_code || outp.LibraryOutput.outputCode} - #{outp.LibraryOutput.output}
+                                            if outp.LibraryOutput
+                                              | OUTPUT: #{outp.LibraryOutput.output_code || outp.LibraryOutput.outputCode} - #{outp.LibraryOutput.output}
+                                            else
+                                              | OUTPUT: #{outp.adaptedOutputIndicator}
                                           if !isLocked
                                             .btn-group
                                               button.btn.btn-link.btn-xs.text-primary.p-0(onclick=`prepareIndicatorModal('Output', ${outp.id})`)
@@ -138,35 +152,54 @@ if plan.SelectedObjectives && plan.SelectedObjectives.length > 0
 
                                         //- 5. ACTIONS & BUDGET TABLE
                                         if outp.SelectedActions && outp.SelectedActions.length > 0
-                                          .table-responsive.mt-2
-                                            table.table.table-sm.table-hover.align-middle.mb-0
-                                              thead.bg-light
-                                                tr
-                                                  th.ps-3.x-small.text-muted ACTION / ACTIVITY
-                                                  each y in years
-                                                    th.x-small.text-muted.text-end.pe-3= y
-                                                  if !isLocked
-                                                    th.x-small.text-muted.text-end ACTIONS
+                                          .table-responsive.mt-2.border.rounded-3.shadow-sm
+                                            table.table.align-middle.mb-0
                                               tbody
                                                 each act in outp.SelectedActions
-                                                  tr
-                                                    td.ps-3.py-2
-                                                      p.mb-1.small.fw-bold.text-dark= act.adaptedOutputAction || act.LibraryAction.action
-                                                      span.text-secondary.x-small
-                                                        i.fas.fa-university.me-1
-                                                        | #{act.ResponsibleOffice ? act.ResponsibleOffice.name : 'Unassigned'}
-                                                    each y in years
-                                                      td.text-end.pe-3
-                                                        - const bVal = act.Budgets ? act.Budgets.find(b => b.fy == y) : null
-                                                        span.small.font-monospace(class=bVal ? 'fw-bold text-dark' : 'text-muted')
-                                                          | #{bVal ? 'UGX ' + Number(bVal.val).toLocaleString() : '-'}
+                                                  //- ROW 1: ACTION NAME
+                                                  tr.bg-light(style="border-top: 2px solid #eee;")
+                                                    td.ps-3.pt-3.pb-2(colspan=(years.length))
+                                                      .d-flex.align-items-center
+                                                        if !act.LibraryAction
+                                                          span.badge.rounded-pill.bg-soft-danger.text-danger.border.border-danger.me-2(style="font-size: 0.6rem; padding: 2px 8px;") CUSTOM
+                                                        
+                                                        h6.mb-0.fw-bold.text-dark(style="font-size: 1rem; line-height: 1.4;")
+                                                          if act.LibraryAction
+                                                            = act.adaptedOutputAction || act.LibraryAction.action
+                                                          else
+                                                            = act.adaptedOutputAction
+                                                    
+                                                    //- Edit/Delete Buttons in the top corner
                                                     if !isLocked
-                                                      td.text-end
+                                                      td.text-end.pt-3.pe-3
                                                         .btn-group
-                                                          button.btn.btn-link.btn-xs.text-warning.p-1(onclick=`prepareActionModal(${outp.id}, ${JSON.stringify(act)})`)
+                                                          button.btn.btn-link.btn-sm.text-warning.p-0.me-2(onclick=`prepareActionModal(${outp.id}, ${JSON.stringify(act)})`)
                                                             i.fas.fa-pencil-alt
-                                                          button.btn.btn-link.btn-xs.text-danger.p-1(onclick=`deleteAction(${act.id})`)
+                                                          button.btn.btn-link.btn-sm.text-danger.p-0(onclick=`deleteAction(${act.id})`)
                                                             i.fas.fa-trash-alt
+
+                                                  //- ROW 2: RESPONSIBLE UNIT (OWN ROW)
+                                                  tr
+                                                    td.ps-3.py-2(colspan=(years.length + 1))
+                                                      .d-flex.align-items-center
+                                                        span.text-uppercase.text-muted.fw-bold.me-2(style="font-size: 0.6rem; letter-spacing: 1px;") 
+                                                        span.badge.bg-white.text-secondary.border.px-3.py-2.rounded-3.shadow-xs
+                                                          i.fas.fa-university.me-2.text-primary.opacity-75
+                                                          | #{act.ResponsibleOffice ? act.ResponsibleOffice.name : 'Unassigned Office'}
+
+                                                  //- ROW 3: BUDGET GRID
+                                                  tr.border-bottom
+                                                    //- Empty space under office name to align budgets to the right
+                                                    td.d-none.d-md-table-cell
+                                                    
+                                                    each y in years
+                                                      td.text-end.pe-3.pb-3.pt-2
+                                                        - const bVal = act.Budgets ? act.Budgets.find(b => b.fy == y) : null
+                                                        .p-2.rounded.bg-gray-50.border-dashed
+                                                          .text-muted.fw-bold.mb-1(style="font-size: 0.65rem;") FY #{y}
+                                                          .font-monospace.text-dark(class=bVal ? 'fw-bold' : 'opacity-25' style="font-size: 0.9rem;")
+                                                            | #{bVal ? Number(bVal.val).toLocaleString() : '0'}
+                                        
 else
   .alert.alert-warning.text-center.py-5
     i.fas.fa-folder-open.fa-3x.text-muted.mb-3.d-block

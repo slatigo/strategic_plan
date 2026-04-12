@@ -1,12 +1,9 @@
-//- views/partials/_grid_tables/_outcome_indicators_table.pug
 .table-responsive.mb-4
- 
   table.table.table-sm.table-bordered.align-middle
     thead.bg-light.small
       tr
         th(style="width: 40%") Outcome Indicator
         th.text-center Unit
-        //- Check if reportingFY is actually reaching here
         th.text-center Target (#{reportingFY || 'N/A'})
         th.text-center(style="width: 160px") Actual Value
         th Remarks
@@ -14,20 +11,38 @@
       each ind in (oc.SelectedIndicators || [])
         if ind
           - const entry = (report.OutcomeEntries || []).find(e => e.spOutcomeIndicatorId === ind.id)
-          - const libInd = ind.LibraryIndicator || {}
-          - const nat = libInd.OutcomeNational
+          - const isCustom = !ind.LibraryIndicator
           
-          //- FIX: Use == instead of === or ensure both are strings/numbers
+          //- Resolve display names and codes
+          - const displayName = isCustom ? (ind.adaptedOutcomeIndicator || 'Unnamed Indicator') : ind.LibraryIndicator.indicator
+          - const displayCode = isCustom ? null : ind.LibraryIndicator.indicatorCode
+          
+          //- Resolve effective unit
+          - const displayUnit = ind.effectiveUnit || (ind.LibraryIndicator && ind.LibraryIndicator.OutcomeNational ? ind.LibraryIndicator.OutcomeNational.unit_of_measure : null)
+          
+          //- Target logic
           - const targetObj = (ind.Targets || []).find(t => t.fy == reportingFY)
           
           tr
             td.small.fw-bold 
-              span.text-muted.me-2 [#{libInd.indicatorCode || 'N/A'}]
-              | #{libInd.indicator || 'Indicator'}
-            td.text-center: span.badge.bg-secondary.x-small #{nat ? nat.unit_of_measure : 'N/A'}
+              //- Updated Logic: Add Custom Badge
+              if isCustom
+                span.badge.bg-warning.text-dark.me-2.x-small CUSTOM
+              
+              if displayCode && displayCode.toUpperCase() !== 'N/A'
+                span.text-muted.me-2 [#{displayCode}]
+              
+              | #{displayName}
+            
+            td.text-center
+              if displayUnit && displayUnit.toUpperCase() !== 'N/A' && displayUnit.toLowerCase() !== 'number'
+                span.badge.bg-secondary.x-small #{displayUnit}
+              else
+                span.x-small.text-muted --
+                
             td.text-center.fw-bold.text-primary 
-              //- If targetObj exists, show val, else show 0
               | #{targetObj ? Number(targetObj.val).toLocaleString() : '0'}
+              
             td
               input.form-control.form-control-sm.text-end.number-separator(
                 type="text" 
@@ -35,7 +50,13 @@
                 value=(entry && entry.actualValue != null ? entry.actualValue.toLocaleString() : '')
                 oninput="formatNumber(this)"
                 readonly=isLocked
-
               )
               input(type="hidden" name=`outcomes[${ind.id}][id]` value=ind.id)
-            td: input.form-control.form-control-sm(type="text" name=`outcomes[${ind.id}][rem]` value=(entry ? entry.remarks : '') readonly=isLocked)
+              
+            td
+              input.form-control.form-control-sm(
+                type="text" 
+                name=`outcomes[${ind.id}][rem]` 
+                value=(entry && entry.remarks ? entry.remarks : '') 
+                readonly=isLocked
+              )

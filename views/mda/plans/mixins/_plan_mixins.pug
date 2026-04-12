@@ -1,15 +1,17 @@
 //- views/mda/mixins/_plan_mixins.pug
 
 mixin indicatorRow(item, level, years, isLocked)
+  //- 1. Resolve Library Link (Could be null for custom indicators)
   - let lib = item.LibraryIndicator || item.LibraryIntermediateIndicator || item.LibraryOutputIndicator
   
-  //- 1. Resolve National Data (Aliases from Controller)
+  //- 2. Resolve National Data (Aliases from Controller)
   - let natInfo = null
   if lib
     - natInfo = lib.OutcomeNational || lib.IntermediateNational || lib.OutputNational
   
-  //- 2. Resolve Unit from NationalAlignment
-  - let rawUnit = natInfo ? (natInfo.unit_of_measure || natInfo.unitOfMeasure || '') : ''
+  //- 3. Resolve Unit of Measure (Crucial Fix for Custom)
+  //- We use item.effectiveUnit which is the Sequelize getter we created
+  - let rawUnit = item.effectiveUnit || ''
   - let unitStr = rawUnit.toString().toLowerCase()
   - let isPercent = unitStr.includes('percent') || unitStr.includes('%')
   - let isCurrency = unitStr.includes('ugx') || unitStr.includes('shilling')
@@ -23,9 +25,12 @@ mixin indicatorRow(item, level, years, isLocked)
             - const adaptedKey = level === 'Intermediate' ? 'adaptedIntermediateOutcomeIndicator' : `adapted${level}Indicator`
             - let adaptedText = item[adaptedKey]
             
-            //- 3. Display Code, Source & Unit Badge
+            //- 4. Display Code, Source & Unit Badge
             .mb-1
-              span.badge.bg-secondary.x-small.me-1= lib ? (lib.indicatorCode || lib.indicator_code) : 'N/A'
+              if lib
+                span.badge.bg-secondary.x-small.me-1= (lib.indicatorCode || lib.indicator_code)
+              else
+                span.badge.bg-dark.text-white.x-small.me-1 CUSTOM
               
               if item.dataSource
                 span.text-muted.x-small.me-2(title="Data Source")
@@ -37,22 +42,22 @@ mixin indicatorRow(item, level, years, isLocked)
                   i.fas.fa-ruler.me-1
                   | #{rawUnit}
             
-            //- 4. Display Text (Adapted vs Library)
+            //- 5. Display Text (Adapted vs Library)
             if adaptedText && adaptedText !== '0' && adaptedText !== ''
               p.mb-0.x-small.text-wrap.text-primary.fw-bold
                 i.fas.fa-pen-nib.me-1.small
                 | #{adaptedText}
             else
-              p.mb-0.x-small.text-wrap= lib ? (lib.indicator || lib.indicatorName) : 'N/A'
+              p.mb-0.x-small.text-wrap= lib ? (lib.indicator || lib.indicatorName) : 'Unnamed Custom Indicator'
             
-            //- 5. Responsible Office
+            //- 6. Responsible Office
             if item.ResponsibleOffice
               .mt-1
                 span.text-info.x-small.fw-bold
                   i.fas.fa-building.me-1
                   | #{item.ResponsibleOffice.name}
           
-          //- 6. CONDITIONAL ACTION BUTTONS
+          //- 7. CONDITIONAL ACTION BUTTONS
           if !isLocked
             .btn-group.ms-2
               button.btn.btn-link.btn-xs.text-primary.p-0(onclick=`editIndicator('${level}', ${item.id})` title="Edit")
@@ -69,6 +74,7 @@ mixin indicatorRow(item, level, years, isLocked)
           .col.border-end
             small.d-block.text-muted.x-small Base
             span.badge.bg-light.text-dark.border.x-small
+              //- Priority: 1. National Baseline, 2. Manual Baseline
               - let bVal = (natInfo && natInfo.baseline_value) ? natInfo.baseline_value : item.baselineValue
               if bVal
                 if isPercent
@@ -98,6 +104,7 @@ mixin indicatorRow(item, level, years, isLocked)
                 else
                   | -
               
+              //- Show National Comparison only if it exists (Custom indicators won't have this)
               if natTarget
                 div.x-small.text-danger.fw-bold(style="font-size: 0.65rem;" title="National Alignment Target")
                   - let nVal = natTarget.value

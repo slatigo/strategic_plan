@@ -3,11 +3,12 @@ const {
     SpOutcome, Outcome, SpOutcomeIndicator, OutcomeIndicator, SpOutcomeIndicatorTarget,
     SpIntermediateOutcome, IntermediateOutcome, SpIntermediateOutcomeIndicator, 
     IntermediateOutcomeIndicator, SpIntermediateOutcomeIndicatorTarget,
-    SpIntervention, SpOutput, Output, SpOutputIndicator, OutputIndicator, 
+    SpIntervention, Intervention, // <-- 1. IMPORT ADDED HERE
+    SpOutput, Output, SpOutputIndicator, OutputIndicator, 
     SpOutputIndicatorTarget, SpOutputAction, OutputAction, SpOutputActionBudget,
     SpOutcomeIndicatorReport, SpIntermediateOutcomeIndicatorReport, 
     SpOutputIndicatorReport, SpOutputActionReport, NationalAlignment, NationalValue,
-    ReportComment, User,Mda
+    ReportComment, User, Mda
 } = require('../models');
 
 /**
@@ -81,27 +82,30 @@ exports.getFullReportPackage = async (reportId) => {
                                     {
                                         model: SpIntervention,
                                         as: 'SelectedInterventions',
-                                        include: [{
-                                            model: SpOutput,
-                                            as: 'SelectedOutputs',
-                                            include: [
-                                                { model: Output, as: 'LibraryOutput' }, 
-                                                { 
-                                                    model: SpOutputIndicator, as: 'SelectedIndicators',
-                                                    include: [
-                                                        { model: OutputIndicator, as: 'LibraryIndicator', include: [getNationalInclude('OutputNational')] },
-                                                        { model: SpOutputIndicatorTarget, as: 'Targets', required: false }
-                                                    ]
-                                                },
-                                                { 
-                                                    model: SpOutputAction, as: 'SelectedActions',
-                                                    include: [
-                                                        { model: OutputAction, as: 'LibraryAction' },
-                                                        { model: SpOutputActionBudget, as: 'Budgets', required: false }
-                                                    ] 
-                                                }
-                                            ]
-                                        }]
+                                        include: [
+                                            { model: Intervention, as: 'LibraryIntervention' }, // <-- 2. JOIN ADDED HERE
+                                            {
+                                                model: SpOutput,
+                                                as: 'SelectedOutputs',
+                                                include: [
+                                                    { model: Output, as: 'LibraryOutput' }, 
+                                                    { 
+                                                        model: SpOutputIndicator, as: 'SelectedIndicators',
+                                                        include: [
+                                                            { model: OutputIndicator, as: 'LibraryIndicator', include: [getNationalInclude('OutputNational')] },
+                                                            { model: SpOutputIndicatorTarget, as: 'Targets', required: false }
+                                                        ]
+                                                    },
+                                                    { 
+                                                        model: SpOutputAction, as: 'SelectedActions',
+                                                        include: [
+                                                            { model: OutputAction, as: 'LibraryAction' },
+                                                            { model: SpOutputActionBudget, as: 'Budgets', required: false }
+                                                        ] 
+                                                    }
+                                                ]
+                                            }
+                                        ]
                                     }
                                 ]
                             }

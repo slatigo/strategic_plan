@@ -50,28 +50,32 @@ exports.getPlansLanding = async (req, res) => {
   try {
     const mdaId = req.user.mdaId;
 
-    // 1. Fetch all plans for this MDA
+    // Fetch plans with all associations defined in your model
     const plans = await StrategicPlan.findAll({
       where: { mdaId: mdaId },
       include: [
         { model: PlanCall, as: 'Call' },
-        { model: Programme, as: 'Programme' }
+        { model: Programme, as: 'Programme' },
+        { model: SpObjective, as: 'SelectedObjectives' } 
       ],
       order: [['recorded', 'DESC']]
     });
 
-    // 2. Check if there's an open "Call" for a new plan (Optional logic)
-    const openCalls = await PlanCall.findAll({ where: { status: 'Open' } });
+    // Fetch Open Calls separately to handle the "Start New Plan" dropdown
+    const openCalls = await PlanCall.findAll({ 
+      where: { status: 'Open' },
+      order: [['deadline', 'ASC']]
+    });
 
     res.render('mda/plans/index', {
       title: 'Strategic Plans Management',
       activePage: 'plans',
       plans: plans.map(p => p.get({ plain: true })),
-      openCalls: openCalls,
+      openCalls: openCalls.map(c => c.get({ plain: true })),
       user: req.user
     });
   } catch (error) {
-    console.error(error);
+    console.error("Plan Landing Error:", error);
     res.status(500).send('Error loading plans');
   }
 };
@@ -179,7 +183,11 @@ exports.getPlanEditor = async (req, res) => {
             const startYear = parseInt(plan.Call.fy); 
             years = Array.from({ length: 5 }, (_, i) => startYear + i);
         }
-
+        const unitOfMeasures = [
+            'Number', 'Percentage (%)', 'UGX', 'Ratio (X:1)', 'Ratio (1:X)', 
+            'Per capita', 'Litres', 'Rate per 1,000', 'Rate per 100,000', 
+            'Years', 'Days', 'Metres', 'Kilograms'
+        ];
         // 5. Render
         const template = isPrintMode ? 'mda/plans/plan-print' : 'mda/plans/editor';
         res.render(template, {
@@ -189,6 +197,7 @@ exports.getPlanEditor = async (req, res) => {
             offices,
             budgetSources,
             isPrintMode,
+            unitOfMeasures,
             isLocked,
             years
         });
@@ -298,58 +307,51 @@ exports.addOutcome = async (req, res) => {
 // Save Indicator and its Annual Targets
 exports.saveOutcomeIndicator = async (req, res) => {
     const t = await sequelize.transaction();
-
     try {
         const { 
-            id, 
-            spOutcomeId, 
-            outcomeIndicatorId, 
-            baselineValue, 
-            adaptedOutcomeIndicator,
-            responsibleOfficeId,
-            dataSource,
-            targets 
+            id, spOutcomeId, outcomeIndicatorId, 
+            is_custom, customIndicatorName, customUnit, 
+            baselineValue, adaptedOutcomeIndicator,
+            responsibleOfficeId, dataSource, targets 
         } = req.body;
-       
-        
-        // Note: planId is intentionally removed from here
 
-        let indicator;
-
-        // Prepare consistent data object (No planId)
+        // prepare data based on your SpOutcomeIndicator.init schema
         const indicatorData = {
-            outcomeIndicatorId,
             spOutcomeId,
             baselineValue,
             responsibleOfficeId: responsibleOfficeId || null,
             dataSource: dataSource || null,
-            adaptedOutcomeIndicator: adaptedOutcomeIndicator || null
+            outcome_indicator_id: is_custom === 'on' ? null : outcomeIndicatorId,
+            
+            // Fix for "cannot be null" error:
+            // If custom, use the custom name. 
+            // If library but empty adaptation, provide an empty string to satisfy NOT NULL.
+            adaptedOutcomeIndicator: is_custom === 'on' 
+                ? (customIndicatorName || "Unnamed Custom Indicator") 
+                : (adaptedOutcomeIndicator || ""),
+            
+            // Match the model column name: unitOfMeasure
+            unitOfMeasure: is_custom === 'on' ? customUnit : null 
         };
 
-        // 1. Logic Switch: Update or Find/Create
+        let indicator;
         if (id) {
             indicator = await SpOutcomeIndicator.findByPk(id, { transaction: t });
-            if (indicator) {
+            if (indicator) await indicator.update(indicatorData, { transaction: t });
+        } else {
+            if (is_custom === 'on') {
+                indicator = await SpOutcomeIndicator.create(indicatorData, { transaction: t });
+            } else {
+                [indicator] = await SpOutcomeIndicator.findOrCreate({
+                    where: { spOutcomeId, outcomeIndicatorId },
+                    defaults: indicatorData,
+                    transaction: t
+                });
                 await indicator.update(indicatorData, { transaction: t });
             }
         }
 
-        if (!indicator) {
-            // REMOVED planId from the 'where' clause here
-            [indicator] = await SpOutcomeIndicator.findOrCreate({
-                where: { 
-                    spOutcomeId, 
-                    outcomeIndicatorId 
-                },
-                defaults: indicatorData,
-                transaction: t
-            });
-            
-            // Sync if findOrCreate matched an existing record
-            await indicator.update(indicatorData, { transaction: t });
-        }
-
-        // 2. Handle the Annual Targets
+        // Handle Targets (Logic remains same)
         await SpOutcomeIndicatorTarget.destroy({
             where: { spOutcomeIndicatorId: indicator.id },
             transaction: t
@@ -357,11 +359,11 @@ exports.saveOutcomeIndicator = async (req, res) => {
 
         if (targets && Object.keys(targets).length > 0) {
             const targetRecords = Object.entries(targets)
-                .filter(([year, value]) => value !== '' && value !== null)
-                .map(([year, value]) => ({
+                .filter(([yr, val]) => val !== '' && val !== null)
+                .map(([yr, val]) => ({
                     spOutcomeIndicatorId: indicator.id,
-                    fy: year,
-                    val: value
+                    fy: yr,
+                    val: val.replace(/,/g, '') // sanitize
                 }));
 
             if (targetRecords.length > 0) {
@@ -370,11 +372,10 @@ exports.saveOutcomeIndicator = async (req, res) => {
         }
 
         await t.commit();
-        res.json({ status: 'success', message: 'Indicator and targets saved successfully' });
-
+        res.json({ status: 'success', message: 'Indicator saved successfully' });
     } catch (error) {
         if (t) await t.rollback();
-        console.error("Error saving outcome indicator:", error);
+        console.error("Save Error:", error);
         res.status(500).json({ status: 'error', message: error.message });
     }
 };
@@ -475,7 +476,6 @@ exports.addIntermediateOutcome = async (req, res) => {
         });
     }
 };
-
 exports.saveIntermediateOutcomeIndicator = async (req, res) => {
     const t = await sequelize.transaction();
     
@@ -484,6 +484,9 @@ exports.saveIntermediateOutcomeIndicator = async (req, res) => {
             id, 
             spIntermediateOutcomeId, 
             intermediateOutcomeIndicatorId, 
+            is_custom,           
+            customIndicatorName, 
+            customUnit,          
             baselineValue, 
             adaptedIntermediateOutcomeIndicator,
             responsibleOfficeId,
@@ -491,55 +494,72 @@ exports.saveIntermediateOutcomeIndicator = async (req, res) => {
             targets 
         } = req.body;
 
-        let indicator;
+        // DEBUG: View exactly what came from the browser
+        console.log("RAW REQ BODY:", req.body);
 
-        // Clean data: Convert empty strings to null for database safety
+        // 1. Prepare consistent data object
+        // NOTE: Check your SpIntermediateOutcomeIndicator model. 
+        // If the field is 'unit_of_measure', change 'unitOfMeasure' below to match.
         const indicatorData = {
-            intermediateOutcomeIndicatorId: intermediateOutcomeIndicatorId || null,
             spIntermediateOutcomeId: spIntermediateOutcomeId || null,
-            baselineValue: baselineValue || null,
+            baselineValue: baselineValue ? baselineValue.toString().replace(/,/g, '') : null,
             responsibleOfficeId: responsibleOfficeId || null,
             dataSource: dataSource || null,
-            adaptedIntermediateOutcomeIndicator: adaptedIntermediateOutcomeIndicator || null
+            
+            // Logic Switch for Library vs Custom
+            intermediateOutcomeIndicatorId: is_custom === 'on' ? null : (intermediateOutcomeIndicatorId || null),
+            
+            // Custom name goes in the adapted column
+            adaptedIntermediateOutcomeIndicator: is_custom === 'on' ? customIndicatorName : (adaptedIntermediateOutcomeIndicator || null),
+            
+            // THE FIX: Use the key that matches your Sequelize Model definition exactly
+            unitOfMeasure: is_custom === 'on' ? customUnit : null 
         };
 
-        // 1. Logic Switch: Update or Find/Create
-        // If id is provided and not an empty string
-        if (id && id !== '') {
+        console.log("DATA SENT TO SEQUELIZE:", indicatorData);
+
+        let indicator;
+
+        // 2. Logic Switch: Update or Find/Create
+        if (id && id !== '' && id !== 'undefined' && id !== null) {
+            // EDIT MODE
             indicator = await SpIntermediateOutcomeIndicator.findByPk(id, { transaction: t });
             if (indicator) {
                 await indicator.update(indicatorData, { transaction: t });
             }
         } 
         
+        // 3. If new entry or findByPk failed
         if (!indicator) {
-            // 1b. ADD MODE: planId is REMOVED from the where clause
-            [indicator] = await SpIntermediateOutcomeIndicator.findOrCreate({
-                where: { 
-                    spIntermediateOutcomeId: indicatorData.spIntermediateOutcomeId, 
-                    intermediateOutcomeIndicatorId: indicatorData.intermediateOutcomeIndicatorId
-                },
-                defaults: indicatorData,
-                transaction: t
-            });
-
-            // Ensure all fields are updated if findOrCreate matched an old record
-            await indicator.update(indicatorData, { transaction: t });
+            if (is_custom === 'on') {
+                indicator = await SpIntermediateOutcomeIndicator.create(indicatorData, { transaction: t });
+            } else {
+                [indicator] = await SpIntermediateOutcomeIndicator.findOrCreate({
+                    where: { 
+                        spIntermediateOutcomeId: indicatorData.spIntermediateOutcomeId, 
+                        intermediateOutcomeIndicatorId: indicatorData.intermediateOutcomeIndicatorId
+                    },
+                    defaults: indicatorData,
+                    transaction: t
+                });
+                // Update in case it existed but baseline/unit changed
+                await indicator.update(indicatorData, { transaction: t });
+            }
         }
 
-        // 2. Refresh Targets
+        // 4. Refresh Targets (Delete old, Insert new)
         await SpIntermediateOutcomeIndicatorTarget.destroy({ 
             where: { spIntermediateOutcomeIndicatorId: indicator.id },
             transaction: t 
         });
 
-        if (targets && Object.keys(targets).length > 0) {
+        if (targets && typeof targets === 'object') {
             const targetEntries = Object.entries(targets)
                 .filter(([year, val]) => val !== '' && val !== null) 
                 .map(([year, val]) => ({
                     spIntermediateOutcomeIndicatorId: indicator.id,
                     fy: year, 
-                    val: val
+                    val: val.toString().replace(/,/g, '') 
                 }));
             
             if (targetEntries.length > 0) {
@@ -548,11 +568,19 @@ exports.saveIntermediateOutcomeIndicator = async (req, res) => {
         }
 
         await t.commit();
-        res.json({ status: 'success', message: 'Indicator and Targets saved successfully' });
+        res.json({ 
+            status: 'success', 
+            message: 'Indicator and Targets saved successfully', 
+            id: indicator.id 
+        });
+
     } catch (err) {
         if (t) await t.rollback();
-        console.error("Save Error:", err);
-        res.status(500).json({ status: 'error', message: err.message });
+        console.error("SAVE INTERMEDIATE INDICATOR ERROR:", err);
+        res.status(500).json({ 
+            status: 'error', 
+            message: err.message 
+        });
     }
 };
 
@@ -889,11 +917,14 @@ exports.getLibraryOutputIndicators = async (req, res) => {
     }
 };
 exports.saveOutputIndicator = async (req, res) => {
-    // 1. Remove planId from destructuring
+    // 1. Destructure fields from req.body
     const { 
         id, 
         spOutputId, 
         outputIndicatorId, 
+        is_custom,           
+        customIndicatorName, 
+        customUnit,          
         baselineValue, 
         adaptedOutputIndicator,
         responsibleOfficeId,
@@ -906,18 +937,26 @@ exports.saveOutputIndicator = async (req, res) => {
     try {
         let indicator;
 
-        // 2. Prepare data object (planId removed)
+        // 2. Prepare data object
         const indicatorData = {
-            baselineValue,
-            outputIndicatorId,
+            // Remove commas from baseline strings before saving
+            baselineValue: baselineValue ? baselineValue.toString().replace(/,/g, '') : null,
             spOutputId,
             responsibleOfficeId: responsibleOfficeId || null,
             dataSource: dataSource || null,
-            adaptedOutputIndicator: adaptedOutputIndicator || null
+            
+            // Logic Switch: Custom vs Library
+            outputIndicatorId: is_custom === 'on' ? null : (outputIndicatorId || null),
+            
+            // If custom, use the name input; otherwise use the adaptation text
+            adaptedOutputIndicator: is_custom === 'on' ? customIndicatorName : (adaptedOutputIndicator || null),
+            
+            // Ensure this key matches your Sequelize Model (unitOfMeasure)
+            unitOfMeasure: is_custom === 'on' ? customUnit : null 
         };
 
         // 3. UPDATE OR CREATE LOGIC
-        if (id && id !== '') {
+        if (id && id !== '' && id !== 'undefined' && id !== null) {
             // EDIT MODE
             indicator = await SpOutputIndicator.findByPk(id, { transaction });
             if (!indicator) throw new Error('Indicator record not found');
@@ -925,32 +964,41 @@ exports.saveOutputIndicator = async (req, res) => {
             await indicator.update(indicatorData, { transaction });
 
         } else {
-            // ADD MODE: findOrCreate using only relationship IDs
-            [indicator] = await SpOutputIndicator.findOrCreate({
-                where: { spOutputId, outputIndicatorId }, // planId REMOVED
-                defaults: indicatorData,
-                transaction
-            });
+            // ADD MODE
+            if (is_custom === 'on') {
+                // Always create a fresh record for custom entries
+                indicator = await SpOutputIndicator.create(indicatorData, { transaction });
+            } else {
+                // For library indicators, find existing or create new for this parent output
+                [indicator] = await SpOutputIndicator.findOrCreate({
+                    where: { 
+                        spOutputId, 
+                        outputIndicatorId: indicatorData.outputIndicatorId 
+                    },
+                    defaults: indicatorData,
+                    transaction
+                });
 
-            // Sync values if findOrCreate matched an existing record
-            await indicator.update(indicatorData, { transaction });
+                // Sync values in case the library record already existed but baseline/unit changed
+                await indicator.update(indicatorData, { transaction });
+            }
         }
 
         // 4. SAVE ANNUAL TARGETS
+        // First, clear existing targets for this specific record
         await SpOutputIndicatorTarget.destroy({ 
             where: { spOutputIndicatorId: indicator.id }, 
             transaction 
         });
 
-        if (targets) {
+        if (targets && typeof targets === 'object') {
             const targetData = Object.keys(targets)
                 .filter(year => targets[year] !== '' && targets[year] !== null)
                 .map(year => ({
                     spOutputIndicatorId: indicator.id,
                     fy: year,
-                    val: targets[year]
-                    // Note: If SpOutputIndicatorTarget still has a plan_id column, 
-                    // you may need to remove it from there too.
+                    // Sanitize numeric value by removing commas
+                    val: targets[year].toString().replace(/,/g, '')
                 }));
 
             if (targetData.length > 0) {
@@ -958,22 +1006,27 @@ exports.saveOutputIndicator = async (req, res) => {
             }
         }
 
+        // 5. Commit everything
         await transaction.commit();
         
         res.json({ 
             status: 'success', 
-            message: 'Output Indicator and targets saved successfully' 
+            message: 'Output Indicator and targets saved successfully',
+            id: indicator.id 
         });
 
     } catch (error) {
         if (transaction) await transaction.rollback();
         console.error("Save Output Indicator Error:", error);
         
+        let errorMessage = error.message;
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            errorMessage = 'This indicator has already been added to this output.';
+        }
+        
         res.status(500).json({ 
             status: 'error', 
-            message: error.name === 'SequelizeUniqueConstraintError' 
-                ? 'This indicator has already been added to this output.' 
-                : error.message 
+            message: errorMessage 
         });
     }
 };
@@ -1001,76 +1054,73 @@ exports.getLibraryActionsByOutput = async (req, res) => {
 exports.saveOutputAction = async (req, res) => {
     const t = await sequelize.transaction();
     try {
-        // 1. Removed planId from destructuring
-        const { 
-            id, 
-            spOutputId, 
-            outputActionId, 
-            adaptedOutputAction, 
-            responsibleOfficeId, 
-            budgetSourceId,      
-            budgets              
-        } = req.body;
-        console.log(req.body)
-        let actionRecord;
+        // 1. Log to confirm receipt
+        console.log("RECEIVED PAYLOAD:", req.body);
 
-        // 2. Prepare the data object (planId removed)
+        const data = req.body;
+
+        // 2. Prepare Action Data
         const actionData = {
-            outputActionId,
-            spOutputId,
-            adaptedOutputAction: adaptedOutputAction || null,
-            responsibleOfficeId: responsibleOfficeId || null, 
-            budgetSourceId: budgetSourceId || null           
+            spOutputId: data.spOutputId,
+            responsibleOfficeId: data.responsibleOfficeId || null,
+            budgetSourceId: data.budgetSourceId || null,
+            // Logic: if custom is 'on', ignore library ID and use custom name
+            outputActionId: data.is_custom === 'on' ? null : (data.outputActionId || null),
+            adaptedOutputAction: data.is_custom === 'on' ? data.customActionName : (data.adaptedOutputAction || null)
         };
 
-        // 3. Update or Create Logic
-        if (id && id !== '') {
-            actionRecord = await SpOutputAction.findByPk(id, { transaction: t });
+        let actionRecord;
+        
+        // 3. Update or Create
+        if (data.id && data.id !== '' && data.id !== 'null' && data.id !== 'undefined') {
+            actionRecord = await SpOutputAction.findByPk(data.id, { transaction: t });
             if (actionRecord) {
                 await actionRecord.update(actionData, { transaction: t });
             }
-        } else {
-            // Using findOrCreate without planId in the 'where' clause
-            [actionRecord] = await SpOutputAction.findOrCreate({
-                where: { spOutputId, outputActionId }, 
-                defaults: actionData,
-                transaction: t
-            });
-            
-            // If it already existed, ensure the update happens
-            await actionRecord.update(actionData, { transaction: t });
+        } 
+        
+        if (!actionRecord) {
+            actionRecord = await SpOutputAction.create(actionData, { transaction: t });
         }
 
-        // 4. Handle Annual Budgets (Wipe and Re-insert)
+        // 4. Handle Budgets manually for each year
+        // This avoids the regex/nesting issues we had before
+        const years = ['2025', '2026', '2027', '2028', '2029'];
+
+        // Clear existing budgets first
         await SpOutputActionBudget.destroy({ 
             where: { spOutputActionId: actionRecord.id }, 
             transaction: t 
         });
 
-        if (budgets && Object.keys(budgets).length > 0) {
-            const budgetEntries = Object.entries(budgets)
-                .filter(([year, val]) => val !== '' && val !== null)
-                .map(([year, val]) => ({
-                    spOutputActionId: actionRecord.id,
-                    fy: year,
-                    val: val
-                    // planId is removed from here as well!
-                }));
+        for (const yr of years) {
+            // This matches your payload key: budgets
+            const budgetKey = `budgets[${yr}]`;
+            const budgetVal = data[budgetKey];
 
-            if (budgetEntries.length > 0) {
-                await SpOutputActionBudget.bulkCreate(budgetEntries, { transaction: t });
+            if (budgetVal !== undefined && budgetVal !== '') {
+                // Clean the string (remove commas) and convert to number
+                const numericAmount = parseFloat(budgetVal.toString().replace(/,/g, '')) || 0;
+
+                await SpOutputActionBudget.create({
+                    spOutputActionId: actionRecord.id,
+                    fy: yr,
+                    val: numericAmount // Verify if your DB column is 'val' or 'amount'
+                }, { transaction: t });
+                
+                console.log(`Saved year ${yr}: ${numericAmount}`);
             }
         }
 
         await t.commit();
-        res.json({ status: 'success', message: 'Action and Budgets saved successfully' });
+        res.json({ status: 'success', message: 'Saved successfully' });
+
     } catch (err) {
         if (t) await t.rollback();
-        console.error("Save Action Error:", err);
+        console.error("SAVE ACTION ERROR:", err);
         res.status(500).json({ status: 'error', message: err.message });
     }
 };
-
 
 exports.deleteOutputAction = async (req, res) => {
     const { id } = req.params; // The ID of the SpOutputAction record

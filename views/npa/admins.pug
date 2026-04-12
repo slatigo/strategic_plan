@@ -1,4 +1,4 @@
-extends ./layout
+extends ../layout
 
 block npa_content
   //- Header Section
@@ -15,60 +15,73 @@ block npa_content
     .card-body.p-0
       .table-responsive
         table.table.table-hover.align-middle.mb-0
-          thead.table-light
-            tr
-              th.px-4 Name
-              th Email
-              th Role
-              th Status
-              th.text-end.px-4 Actions
-          tbody
-              tbody
-                if admins && admins.length > 0
-                  each admin in admins
-                    //- Apply a 'table-light' or custom class if the admin is inactive
-                    tr(class=!admin.active ? 'bg-light text-muted' : '')
-                      td.px-4
-                        .d-flex.align-items-center
-                          //- Avatar turns grey if inactive
-                          .avatar.sm.rounded-circle.me-2.d-flex.align-items-center.justify-content-center(
-                            class=admin.active ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'
-                            style="width: 32px; height: 32px; font-size: 12px;"
-                          )
-                            = admin.name.charAt(0).toUpperCase()
-                          
-                          span(class=admin.active ? 'fw-medium' : 'text-decoration-line-through')= admin.name
-                      
-                      td= admin.email
-                      
-                      td
-                        if admin.active
-                          span.badge.rounded-pill.bg-success-subtle.text-success.border.border-success-subtle
-                            i.fas.fa-check-circle.me-1
-                            | Active
-                        else
-                          span.badge.rounded-pill.bg-danger-subtle.text-danger.border.border-danger-subtle
-                            i.fas.fa-times-circle.me-1
-                            | Inactive
-                      
-                      td.text-end.px-4
-                        //- Edit Button
-                        button.btn.btn-light.btn-sm.me-2(
-                          onclick=`prepareAdminEdit('${admin.id}', '${admin.name}', '${admin.email}', ${admin.active})`
-                          title="Edit Admin"
+            thead.table-light
+              tr
+                th.px-4 Name
+                th Email
+                th Role
+                th Status
+                th.text-end.px-4 Actions
+            tbody
+              if admins && admins.length > 0
+                each admin in admins
+                  tr(class=!admin.active ? 'bg-light text-muted' : '')
+                    td.px-4
+                      .d-flex.align-items-center
+                        //- Avatar
+                        .avatar.sm.rounded-circle.me-2.d-flex.align-items-center.justify-content-center(
+                          class=admin.active ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'
+                          style="width: 32px; height: 32px; font-size: 12px;"
                         )
-                          i.fas.fa-user-edit
+                          = admin.name.charAt(0).toUpperCase()
                         
-                        //- Delete Button
-                        button.btn.btn-light.btn-sm.text-danger(
-                          onclick=`confirmAdminDelete('${admin.id}')`
-                          title="Remove Admin"
-                        )
-                          i.fas.fa-trash-can
-                else
-                  tr
-                    td.text-center.py-5(colspan="4")
-                      p.text-muted No administrators found.
+                        //- Name with strike-through if inactive
+                        span(class=admin.active ? 'fw-medium' : 'text-decoration-line-through')= admin.name
+                    
+                    td= admin.email
+                    
+                    td 
+                      span.small.text-muted Administrator
+                    
+                    td
+                      if admin.active
+                        span.badge.rounded-pill.bg-success-subtle.text-success.border.border-success-subtle
+                          i.fas.fa-check-circle.me-1
+                          | Active
+                      else
+                        span.badge.rounded-pill.bg-danger-subtle.text-danger.border.border-danger-subtle
+                          i.fas.fa-times-circle.me-1
+                          | Inactive
+                    
+                    td.text-end.px-4
+                      //- Edit Button: Uses data-attributes to pass info safely
+                      button.btn.btn-light.btn-sm.me-2(
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#adminModal"
+                        data-id=admin.id
+                        data-name=admin.name
+                        data-email=admin.email
+                        data-active=admin.active.toString()
+                        onclick="loadAdminData(this)"
+                        title="Edit Admin"
+                      )
+                        i.fas.fa-user-edit
+                      
+                      //- Delete Button
+                      button.btn.btn-light.btn-sm.text-danger(
+                        type="button"
+                        onclick=`confirmAdminDelete('${admin.id}')`
+                        title="Remove Admin"
+                      )
+                        i.fas.fa-trash-can
+              else
+                tr
+                  //- colspan set to 5 to cover all columns
+                  td.text-center.py-5(colspan="5")
+                    p.text-muted.mb-0 
+                      i.fas.fa-user-slash.me-2
+                      | No administrators found.
 
   //- Invite/Edit Modal
   #adminModal.modal.fade(tabindex="-1" aria-hidden="true")

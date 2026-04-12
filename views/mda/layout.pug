@@ -72,21 +72,13 @@ html(lang="en")
             | Logout
 
       #page-content-wrapper
-        nav.navbar.navbar-expand.navbar-mda.mb-4.rounded.shadow-sm.sticky-top
-          .container-fluid
-            span.navbar-text.fw-bold.text-dark
-              i.fas.fa-building.me-2
-              | #{user.mdaName ? user.mdaName : 'Unknown MDA'}
+        header.navbar.bg-white.shadow-sm.sticky-top
+          .container-fluid.px-4
+            h5.mb-0.fw-bold.text-dark= title
             
-            ul.navbar-nav.ms-auto
-              li.nav-item.dropdown
-                a.nav-link.dropdown-toggle.text-dark(href="#" data-bs-toggle="dropdown")
-                  i.fas.fa-user-circle.me-2
-                  | #{user.name}
-                ul.dropdown-menu.dropdown-menu-end
-                  li: a.dropdown-item(href="/profile") Profile
-                  li: hr.dropdown-divider
-                  li: a.dropdown-item.text-danger(href="/logout") Logout
+            //- Wrap the user menu in a div to ensure proper flex alignment
+            .d-flex.align-items-center
+              include ../partials/_user_menu
 
         .container-fluid
           block mda_content

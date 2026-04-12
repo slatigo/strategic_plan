@@ -6,40 +6,54 @@ block mda_content
       div
         h2.fw-bold Strategic Plans
         p.text-muted Manage your MDA's multi-year strategic framework.
-      
-      if openCalls.length > 0
-        button.btn.btn-primary(data-bs-toggle="modal" data-bs-target="#newPlanModal")
-          i.fas.fa-plus.me-2
-          | Start New Plan
-    
-    .row
-      if plans.length > 0
-        each plan in plans
-          .col-md-6.col-lg-4.mb-4
-            .card.h-100.shadow-sm
+
+    if plans.length > 0
+      each plan in plans
+        .row.mb-3
+          .col-12
+            .card.shadow-sm.border-0.h-100(style="border-left: 5px solid " + (plan.status === 'Approved' ? '#198754' : (plan.status === 'Submitted' ? '#0dcaf0' : '#ffc107')))
               .card-body
-                .d-flex.justify-content-between.mb-2
-                  span.badge.bg-dark FY #{plan.Call.reportingYear}
-                  - const statusClass = plan.status === 'Approved' ? 'bg-success' : (plan.status === 'Submitted' ? 'bg-info' : 'bg-warning')
-                  span(class=`badge ${statusClass}`) #{plan.status}
-                
-                h5.card-title.fw-bold.mb-1 #{plan.Programme ? plan.Programme.programmeName : 'Unassigned Programme'}
-                p.text-muted.small Objective: #{plan.SelectedObjectives ? plan.SelectedObjectives.length : 0} Selected
-                
-                hr
-                
-                .d-grid.gap-2
-                  if plan.status === 'Draft' || plan.status === 'Pending Correction'
-                    a.btn.btn-outline-primary.btn-sm(href=`/mda/plans/${plan.id}/edit`)
-                      i.fas.fa-edit.me-2
-                      | Edit Framework
-                  else
-                    a.btn.btn-outline-secondary.btn-sm(href=`/mda/plans/view/${plan.id}`)
-                      i.fas.fa-eye.me-2
-                      | View Plan
-      else
-        .col-12
-          .alert.alert-light.text-center.py-5.border.dashed
-            i.fas.fa-folder-open.fa-3x.text-muted.mb-3
-            h5 No plans found.
-            p.text-muted Start by selecting an open Call for the next Fiscal Year.
+                //- TOP ROW: Metadata & Actions
+                .d-flex.justify-content-between.align-items-start.mb-3
+                  div
+                    span.badge.bg-dark.me-2 FY #{plan.Call ? plan.Call.fy : 'N/A'}
+                    h5.fw-bold.d-inline.align-middle #{plan.Programme ? plan.Programme.programmeName : 'Unassigned Programme'}
+                    .mt-1
+                      small.text-muted.me-3
+                        i.fas.fa-calendar-alt.me-1
+                        | Initiated: #{new Date(plan.recorded).toLocaleDateString()}
+                      small.text-muted
+                        i.fas.fa-bullseye.me-1
+                        | Objectives: #{plan.SelectedObjectives ? plan.SelectedObjectives.length : 0}
+                  
+                  //- Actions & Status
+                  .text-end
+                    span.badge.rounded-pill.px-3.py-2.mb-2(class=plan.status === 'Approved' ? 'bg-success' : (plan.status === 'Submitted' ? 'bg-info' : 'bg-warning'))
+                      | #{plan.status}
+                    br
+                    if plan.status === 'Draft' || plan.status === 'Pending Correction'
+                      a.btn.btn-outline-primary.btn-sm(href=`/mda/plans/${plan.id}/edit`) Edit Plan
+                    else
+                      a.btn.btn-outline-secondary.btn-sm(href=`/mda/plans/view/${plan.id}`) View Details
+
+                //- BOTTOM ROW: Call Info & Description
+                if plan.Call
+                  hr.my-2
+                  .row.mt-2
+                    .col-md-4
+                      p.small.mb-0 
+                        strong Call Status: 
+                        | #{plan.Call.status}
+                      p.small.mb-0 
+                        strong Deadline: 
+                        | #{new Date(plan.Call.deadline).toLocaleDateString()}
+                    .col-md-8
+                      p.small.text-muted.mb-0
+                        strong Description: 
+                        | #{plan.Call.description || 'No description provided for this call.'}
+    else
+      .alert.alert-light.text-center.py-5
+        i.fas.fa-folder-open.fa-3x.text-muted.mb-3
+        h5 No plans found.
+        p.text-muted Start by selecting an open Call from the top menu.
+    

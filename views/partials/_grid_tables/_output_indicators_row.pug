@@ -1,24 +1,73 @@
-//- views/partials/_grid_tables/_output_indicators_row.pug
-- const oEntry = (report.OutputEntries || []).find(e => e.spOutputIndicatorId === oInd.id)
-- const libOInd = oInd.LibraryIndicator || {}
-- const oNat = libOInd.OutputNational
-- const oTargetObj = (oInd.Targets || []).find(t => t.fy === reportingFY)
+//- SETTINGS: Keep false for production
+- const DEBUG_MODE = false
 
+//- 1. Data Retrieval
+- const oEntry = (report.OutputEntries || []).find(e => e.spOutputIndicatorId === oInd.id)
+- const oTargetObj = (oInd.Targets || []).find(t => t.fy === reportingFY)
+- const isNoChange = (oEntry && oEntry.isNoChange === true)
+
+//- 2. Sanitization & Resolver
+- const isCustom = !oInd.LibraryIndicator
+- const displayName = isCustom ? (oInd.adaptedOutputIndicator || 'Unnamed Indicator') : (oInd.LibraryIndicator ? oInd.LibraryIndicator.indicator : 'Unnamed')
+- const displayCode = (oInd.LibraryIndicator && oInd.LibraryIndicator.indicatorCode && oInd.LibraryIndicator.indicatorCode.toUpperCase() !== 'N/A') ? oInd.LibraryIndicator.indicatorCode : null
+
+//- 3. Unit Resolution (Fixed to allow "Number")
+- const libUnit = (oInd.LibraryIndicator && oInd.LibraryIndicator.OutputNational) ? oInd.LibraryIndicator.OutputNational.unit_of_measure : null
+- const rawUnit = (oInd.effectiveUnit || oInd.unitOfMeasure || libUnit || '').trim()
+- const cleanUnit = rawUnit.toUpperCase()
+//- 'NUMBER' is now treated as a valid unit
+- const displayUnit = (rawUnit && cleanUnit !== 'N/A' && cleanUnit !== '') ? rawUnit : null
+
+//- 4. Display Row
 .row.g-2.mb-1.align-items-center
   .col-md-4
-    span.x-small.text-muted.me-1 [#{libOInd.indicatorCode || 'N/A'}]
-    span.x-small.fw-bold #{libOInd.indicator}
+    if isCustom
+      span.badge.bg-warning.text-dark.me-2.x-small CUSTOM
+    if displayCode
+      span.x-small.text-muted.me-1 [#{displayCode}]
+    span.x-small.fw-bold #{displayName}
+    
   .col-md-1.text-center
-    span.badge.bg-secondary.x-small #{oNat ? oNat.unit_of_measure : 'N/A'}
+    if displayUnit
+      //- Visual: "Number" is subtle, other units pop
+      span.badge(class=displayUnit.toUpperCase() === 'NUMBER' ? 'bg-light text-muted border' : 'bg-secondary') #{displayUnit}
+    else
+      span.x-small.text-muted --
+      
   .col-md-2.text-center
-    span.badge.bg-light.text-primary.border.x-small Target: #{oTargetObj && oTargetObj.val ? Number(oTargetObj.val).toLocaleString() : '0'}
+    span.badge.bg-light.text-primary.border.x-small 
+      | Target: #{ (oTargetObj && oTargetObj.val) ? Number(oTargetObj.val).toLocaleString() : '0' }
+      
   .col-md-2
-    input.form-control.form-control-sm.text-end.number-separator(
+    if isNoChange
+      input.form-control.form-control-sm.text-center.bg-light(type="text" value="NO CHANGE" readonly=true)
+    else
+      input.form-control.form-control-sm.text-end.number-separator(
+        type="text" 
+        name=`outputs[${oInd.id}][val]` 
+        value=(oEntry && oEntry.actualValue != null ? oEntry.actualValue.toLocaleString() : '')
+        oninput="formatNumber(this)" 
+        readonly=isLocked
+      )
+    input(type="hidden" name=`outputs[${oInd.id}][id]` value=oInd.id)
+    
+  .col-md-3.d-flex.align-items-center
+    .form-check.form-switch.me-2
+      input.form-check-input(
+        type="checkbox" 
+        name=`outputs[${oInd.id}][noChange]` 
+        checked=isNoChange 
+        disabled=isLocked
+      )
+    input.form-control.form-control-sm(
       type="text" 
-      name=`outputs[${oInd.id}][val]` 
-      value=(oEntry && oEntry.actualValue != null ? oEntry.actualValue.toLocaleString() : '')
-      oninput="formatNumber(this)"
+      name=`outputs[${oInd.id}][rem]` 
+      placeholder="Remarks..."
+      value=(oEntry ? oEntry.remarks : '') 
       readonly=isLocked
     )
-    input(type="hidden" name=`outputs[${oInd.id}][id]` value=oInd.id)
-  .col-md-3: input.form-control.form-control-sm(type="text" name=`outputs[${oInd.id}][rem]` value=(oEntry ? oEntry.remarks : '') readonly=isLocked)
+
+//- 5. Debug Panel (Hidden unless DEBUG_MODE is true)
+if DEBUG_MODE
+  .mt-2.p-2.bg-dark.text-white.rounded.small
+    pre.mb-0: code Indicator Data: #{JSON.stringify(oInd, null, 2)}
