@@ -159,6 +159,7 @@ exports.getPlanEditor = async (req, res) => {
                 ]
             })
         ]);
+        console.log("reached here")
 
         if (!plan) return res.status(404).send("Plan not found");
 
