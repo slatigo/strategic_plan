@@ -127,77 +127,78 @@ exports.getPlanEditor = async (req, res) => {
         const { id } = req.params;
 
         // 1. Fetch lookup tables and Plan in parallel
-        // We use the fullPlanStructure utility here
+        // We use raw: true, nest: true to get a clean JSON object without class overhead
         const [offices, budgetSources, plan] = await Promise.all([
             Office.findAll({ 
                 where: { mdaId: req.user.mdaId }, 
-                order: [['name', 'ASC']] 
+                order: [['name', 'ASC']],
+                raw: true // Optimization: Raw data
             }),
             BudgetSource.findAll({ 
                 where: { mdaId: req.user.mdaId }, 
-                order: [['name', 'ASC']] 
+                order: [['name', 'ASC']],
+                raw: true // Optimization: Raw data
             }),
             StrategicPlan.findByPk(id, {
-                include: [...fullPlanStructure,
-                            {
-                            model: PlanComment, // Add the Comments model here
-                            as: 'Comments',
-                            include: [
-                                { 
-                                    model: User, 
-                                    as: 'Author', 
-                                    attributes: ['name'] // Only pull the name of the NPA admin
-                                }
-                            ],
-                            separate: true, // Recommended for performance with deep includes
-                            order: [['createdAt', 'DESC']] // Show newest feedback first
-                        }
-
-                ],
-                
+                include: [...fullPlanStructure, {
+                    model: PlanComment,
+                    as: 'Comments',
+                    include: [{ model: User, as: 'Author', attributes: ['name'] }],
+                    separate: true, // Keep separate for deep includes
+                    order: [['createdAt', 'DESC']]
+                }],
+                // REMOVED order clause from here to prevent SQL join errors
             })
         ]);
 
-
         if (!plan) return res.status(404).send("Plan not found");
 
-        // 2. State & Locking Logic
-        const editableStatuses = ['Draft', 'Revision Required'];
-        const isPrintMode = req.query.print === 'true';
-        const isLocked = isPrintMode ? true : !editableStatuses.includes(plan.status);
+        // 2. Sort the data in memory (Fastest approach for deep structures)
+        if (plan.SelectedObjectives && Array.isArray(plan.SelectedObjectives)) {
+            plan.SelectedObjectives.sort((a, b) => {
+                // Safely extract the codes, defaulting to empty strings
+                const codeA = (a.LibraryObjective && a.LibraryObjective.objective_code) ? String(a.LibraryObjective.objective_code) : '';
+                const codeB = (b.LibraryObjective && b.LibraryObjective.objective_code) ? String(b.LibraryObjective.objective_code) : '';
+                
+                return codeA.localeCompare(codeB);
+            });
+        }
 
-        // 3. Fetch library objectives not yet selected
-        const selectedObjIds = plan.SelectedObjectives.map(obj => obj.objectiveId);
+        // 3. Convert to plain object (if not already raw)
+        const planData = plan.get({ plain: true });
+
+        // 4. Fetch library objectives
+        const selectedObjIds = planData.SelectedObjectives.map(obj => obj.objectiveId);
+        
+        // FIXED: Added proper condition for Op.notIn
         const libraryObjectives = await Objective.findAll({
             where: { 
-                programmeId: plan.programmeId,
-                id: { [Op.notIn]: selectedObjIds.length > 0 ? selectedObjIds : [] }
+                programmeId: planData.programmeId,
+                ...(selectedObjIds.length > 0 && {
+                    id: { [Op.notIn]: selectedObjIds }
+                })
             },
-            order: [['objective_code', 'ASC']]
+            order: [['objective_code', 'ASC']],
+            raw: true
         });
 
-        // 4. Generate Fiscal Year Array (5-year horizon)
+        // 5. Logic & Render
+        const isPrintMode = req.query.print === 'true';
+        const isLocked = isPrintMode ? true : !['Draft', 'Revision Required'].includes(planData.status);
+        
         let years = [];
-        if (plan.Call && plan.Call.fy) {
-            const startYear = parseInt(plan.Call.fy); 
+        if (planData.Call && planData.Call.fy) {
+            const startYear = parseInt(planData.Call.fy); 
             years = Array.from({ length: 5 }, (_, i) => startYear + i);
         }
-        const unitOfMeasures = [
-            'Number', 'Percentage (%)', 'UGX', 'Ratio (X:1)', 'Ratio (1:X)', 
-            'Per capita', 'Litres', 'Rate per 1,000', 'Rate per 100,000', 
-            'Years', 'Days', 'Metres', 'Kilograms'
-        ];
-        // 5. Render
-        const template = isPrintMode ? 'mda/plans/plan-print' : 'mda/plans/editor';
-        const planData = plan.get({ plain: true });
-        res.render(template, {
+
+        res.render(isPrintMode ? 'mda/plans/plan-print' : 'mda/plans/editor', {
             title: 'Setup Strategic Plan: Full Framework',
-            plan:planData,
+            plan: planData,
             libraryObjectives,
             offices,
             budgetSources,
             isPrintMode,
-            unitOfMeasures,
             isLocked,
             years
         });
