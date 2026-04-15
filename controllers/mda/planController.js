@@ -154,12 +154,10 @@ exports.getPlanEditor = async (req, res) => {
                         }
 
                 ],
-                order: [
-                    [{ model: SpObjective, as: 'SelectedObjectives' }, { model: Objective, as: 'LibraryObjective' }, 'objective_code', 'ASC']
-                ]
+                
             })
         ]);
-        console.log("reached here")
+
 
         if (!plan) return res.status(404).send("Plan not found");
 
@@ -191,9 +189,10 @@ exports.getPlanEditor = async (req, res) => {
         ];
         // 5. Render
         const template = isPrintMode ? 'mda/plans/plan-print' : 'mda/plans/editor';
+        const planData = plan.get({ plain: true });
         res.render(template, {
             title: 'Setup Strategic Plan: Full Framework',
-            plan,
+            plan:planData,
             libraryObjectives,
             offices,
             budgetSources,

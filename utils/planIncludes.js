@@ -30,10 +30,12 @@ const fullPlanStructure = [
     { model: Programme, as: 'Programme' },
     { 
         model: SpObjective, as: 'SelectedObjectives',
+        separate: true,
         include: [
             { model: Objective, as: 'LibraryObjective' },
             { 
                 model: SpOutcome, as: 'SelectedOutcomes',
+                separate: true,
                 include: [
                     { model: Outcome, as: 'LibraryOutcome' },
                     { 
